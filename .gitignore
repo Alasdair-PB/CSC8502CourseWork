@@ -1,0 +1,41 @@
+# Visual Studio 2022 C++ project using OpenGL
+
+# Visual Studio related files
+.vs/
+*.vcxproj.user
+*.vcxproj.filters
+*.sln
+*.suo
+*.user
+*.opendb
+*.VC.db
+
+# Build results
+/[Bb]in/
+/[Oo]bj/
+/Debug/
+/Release/
+/ipch/
+/*.pdb
+*.ilk
+*.log
+*.tlog
+*.lastbuildstate
+
+# OpenGL dependencies (example)
+*.lib
+*.dll
+
+# Temporary files
+*.tmp
+*.log
+*.cache
+
+# Exclude generated files
+*.exe
+*.obj
+*.idb
+*.sdf
+*.ipdb
+*.iobj
+*.ipch
