@@ -25,6 +25,10 @@ public:
 	Mesh* GetMesh() const { return mesh; }
 	void SetMesh(Mesh* m) { mesh = m; }
 
+
+	Shader* GetShader() const { return shader; }
+	void SetShader(Shader* s) { shader = s; }
+
 	void AddChild(SceneNode* s);
 
 	virtual void Update(float dt);
@@ -54,6 +58,7 @@ public:
 protected:
 	SceneNode* parent;
 	Mesh* mesh;
+	Shader* shader;
 	Matrix4 worldTransform;
 	Matrix4 transform;
 	Vector3 modelScale;
