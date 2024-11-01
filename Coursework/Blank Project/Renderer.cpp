@@ -77,12 +77,12 @@ void Renderer::RenderScene()	{
 
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-	BindShader(terrainShader);
+	/*BindShader(terrainShader);
 	BindShader(waterShader);
 	UpdateShaderMatrices();
 
 	glUniform1i(glGetUniformLocation(waterShader->GetProgram(), "diffuseTex"), 0);
-	glUniform1i(glGetUniformLocation(terrainShader->GetProgram(), "diffuseTex"), 0);
+	glUniform1i(glGetUniformLocation(terrainShader->GetProgram(), "diffuseTex"), 0);*/
 
 	DrawNodes();
 
@@ -114,7 +114,13 @@ void Renderer::SortNodeLists() {
 }
 
 void Renderer::DrawNode(SceneNode* n) {
-	if (n->GetMesh()) {
+	if (n->GetMesh() && n->GetShader()) {
+		if (currentShader != n->GetShader()) {
+			currentShader = n->GetShader();
+			BindShader(currentShader);
+			UpdateShaderMatrices();
+		}
+
 		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
 		glUniformMatrix4fv(glGetUniformLocation(n->GetShader()->GetProgram(), "modelMatrix"), 1, false, model.values);
 		glUniform4fv(glGetUniformLocation(n->GetShader()->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
@@ -123,8 +129,7 @@ void Renderer::DrawNode(SceneNode* n) {
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
 
-		glUniform1i(glGetUniformLocation(n->GetShader()->GetProgram(), "useTexture"), texture);
-
+		glUniform1i(glGetUniformLocation(n->GetShader()->GetProgram(), "useTexture"), texture ? 1 : 0);
 		n->Draw(*this);
 	}
 }

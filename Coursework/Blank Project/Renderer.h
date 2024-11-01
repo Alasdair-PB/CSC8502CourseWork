@@ -27,6 +27,8 @@ protected:
 	void DrawNode(SceneNode* n);
 	SceneNode* root;
 	Camera* camera;
+
+	Shader* currentShader;
 	Shader* waterShader;
 	Shader* terrainShader;
 	GLuint texture;

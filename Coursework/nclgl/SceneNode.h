@@ -26,8 +26,8 @@ public:
 	void SetMesh(Mesh* m) { mesh = m; }
 
 
+	void SetShader(Shader* shader) { this->shader = shader; }
 	Shader* GetShader() const { return shader; }
-	void SetShader(Shader* s) { shader = s; }
 
 	void AddChild(SceneNode* s);
 
