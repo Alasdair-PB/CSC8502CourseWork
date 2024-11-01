@@ -24,35 +24,35 @@ string ShaderNames[SHADER_MAX] = {
 	"Tess. Eval"
 };
 
-Shader::Shader(const string& vertex, const string& fragment, const string& geometry, const string& domain, const string& hull)	{
-	shaderFiles[SHADER_VERTEX]		= vertex;
-	shaderFiles[SHADER_FRAGMENT]	= fragment;
-	shaderFiles[SHADER_GEOMETRY]	= geometry;
-	shaderFiles[SHADER_DOMAIN]		= domain;
-	shaderFiles[SHADER_HULL]		= hull;
+Shader::Shader(const string& vertex, const string& fragment, const string& geometry, const string& domain, const string& hull) {
+	shaderFiles[SHADER_VERTEX] = vertex;
+	shaderFiles[SHADER_FRAGMENT] = fragment;
+	shaderFiles[SHADER_GEOMETRY] = geometry;
+	shaderFiles[SHADER_DOMAIN] = domain;
+	shaderFiles[SHADER_HULL] = hull;
 
 	Reload(false);
 	allShaders.emplace_back(this);
 }
 
-Shader::~Shader(void)	{
+Shader::~Shader(void) {
 	DeleteIDs();
 }
 
 void	Shader::Reload(bool deleteOld) {
-	if(deleteOld) {
+	if (deleteOld) {
 		DeleteIDs();
 	}
 
-	programID		= glCreateProgram();
+	programID = glCreateProgram();
 
 	for (int i = 0; i < SHADER_MAX; ++i) {
 		if (!shaderFiles[i].empty()) {
 			GenerateShaderObject(i);
 		}
 		else {
-			objectIDs[i]	= 0;
-			shaderValid[i]	= 0;
+			objectIDs[i] = 0;
+			shaderValid[i] = 0;
 		}
 	}
 	SetDefaultAttributes();
@@ -60,19 +60,19 @@ void	Shader::Reload(bool deleteOld) {
 	PrintLinkLog(programID);
 }
 
-bool	Shader::LoadShaderFile(const string& filename, string &into)	{
+bool	Shader::LoadShaderFile(const string& filename, string& into) {
 	ifstream	file(SHADERDIR + filename);
 	string		textLine;
 
 	cout << "Loading shader text from " << filename << "\n\n";
 
-	if(!file.is_open()){
+	if (!file.is_open()) {
 		cout << "ERROR ERROR ERROR ERROR: File does not exist!\n";
 		return false;
 	}
-	int lineNum = 1; 
-	while(!file.eof()){
-		getline(file,textLine);
+	int lineNum = 1;
+	while (!file.eof()) {
+		getline(file, textLine);
 		textLine += "\n";
 		into += textLine;
 		cout << "(" << lineNum << ") :" << textLine;
@@ -82,11 +82,11 @@ bool	Shader::LoadShaderFile(const string& filename, string &into)	{
 	return true;
 }
 
-void	Shader::GenerateShaderObject(unsigned int i)	{
+void	Shader::GenerateShaderObject(unsigned int i) {
 	cout << "Compiling Shader...\n";
 
 	string shaderText;
-	if(!LoadShaderFile(shaderFiles[i],shaderText)) {
+	if (!LoadShaderFile(shaderFiles[i], shaderText)) {
 		cout << "Loading failed!\n";
 		shaderValid[i] = false;
 		return;
@@ -94,8 +94,8 @@ void	Shader::GenerateShaderObject(unsigned int i)	{
 
 	objectIDs[i] = glCreateShader(shaderTypes[i]);
 
-	const char *chars	= shaderText.c_str();
-	int textLength		= (int)shaderText.length();
+	const char* chars = shaderText.c_str();
+	int textLength = (int)shaderText.length();
 	glShaderSource(objectIDs[i], 1, &chars, &textLength);
 	glCompileShader(objectIDs[i]);
 
@@ -113,15 +113,15 @@ void	Shader::GenerateShaderObject(unsigned int i)	{
 	glAttachShader(programID, objectIDs[i]);
 }
 
-void Shader::LinkProgram()	{
+void Shader::LinkProgram() {
 	glLinkProgram(programID);
 	glGetProgramiv(programID, GL_LINK_STATUS, &programValid);
 }
 
-void	Shader::SetDefaultAttributes()	{
-	glBindAttribLocation(programID, VERTEX_BUFFER,  "position");
-	glBindAttribLocation(programID, COLOUR_BUFFER,  "colour");
-	glBindAttribLocation(programID, NORMAL_BUFFER,  "normal");
+void	Shader::SetDefaultAttributes() {
+	glBindAttribLocation(programID, VERTEX_BUFFER, "position");
+	glBindAttribLocation(programID, COLOUR_BUFFER, "colour");
+	glBindAttribLocation(programID, NORMAL_BUFFER, "normal");
 	glBindAttribLocation(programID, TANGENT_BUFFER, "tangent");
 	glBindAttribLocation(programID, TEXTURE_BUFFER, "texCoord");
 
