@@ -30,21 +30,25 @@ protected:
 	void DrawNodes();
 	void DrawNode(SceneNode* n);
 
+	void DrawNodeReflective();
+
 	SceneNode* root;
 	Camera* camera;	
 	Light* light;
 
-	Shader* currentShader;
-	Shader* waterShader;
-	Shader* terrainShader;
 
 	Shader* skyboxShader;
-	Mesh* skyQuad;
 
-	GLuint texture;
-	GLuint textureBump;
+	Shader* currentShader;
+	GLuint currentTexture;
+	GLuint currentBumpMap;
+
+	Mesh* skyQuad;
 	GLuint cubeMap;
 
+	vector<Shader*> shader;
+	vector<GLuint*> texture;
+	vector<GLuint*> textureBump;
 
 	vector<SceneNode*> transparentNodeList;
 	vector<SceneNode*> nodeList;

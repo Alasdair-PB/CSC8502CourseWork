@@ -3,7 +3,7 @@
 
 class Water : public SceneNode {
 public:
-	Water();
+	Water(GLuint texture);
 
 	~Water(void) {
 
