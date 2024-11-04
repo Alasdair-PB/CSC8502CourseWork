@@ -5,6 +5,8 @@ uniform samplerCube cubeTex;
 
 uniform vec3 cameraPos;
 
+//uniform float alphaValue;  
+
 in Vertex {
     vec4 colour;
     vec2 texCoord;
@@ -22,4 +24,6 @@ void main(void) {
     vec4 reflectTex = texture(cubeTex, reflectDir);
     
     fragColour = reflectTex + (diffuse * 0.25f);
+    fragColour.w = 0.85f; // Change to fragColour.w = alphaValue in the future;
+
 }

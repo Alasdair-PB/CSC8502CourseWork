@@ -119,7 +119,7 @@ void Renderer::DrawNode(SceneNode* n)
 		if (n->reflect) {
 			glActiveTexture(GL_TEXTURE2);
 			glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
-			//modelMatrix = Matrix4::Translation(mapSize * 0.5f) * Matrix4::Scale(mapSize * 0.5f) * Matrix4::Rotation(90, Vector3(1, 0, 0));
+			modelMatrix = Matrix4::Translation(mapSize * 0.5f) * Matrix4::Scale(mapSize * 0.5f) * Matrix4::Rotation(90, Vector3(1, 0, 0));
 		}
 
 		// Just for testing
@@ -193,7 +193,7 @@ bool Renderer::SetTerrain(SceneNode* root)
 bool Renderer::SetWater(SceneNode* root)
 {
 	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "water.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0));
-	Shader* waterShader = new Shader("SceneVertex.glsl", "SceneFragment.glsl"); //Shader("reflectVertex.glsl", "reflectFragment.glsl"); /
+	Shader* waterShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl"); //Shader("SceneVertex.glsl", "SceneFragment.glsl"); //
 	SetTextureRepeating(*newTexture, true);
 
 	if (!waterShader->LoadSuccess())

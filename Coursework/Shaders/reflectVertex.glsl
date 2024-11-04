@@ -4,13 +4,15 @@ uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projMatrix;
 uniform mat4 textureMatrix;
+uniform vec4 nodeColour;
+
 
 in vec3 position;
 in vec3 normal;
 in vec2 texCoord;
 
 out Vertex {
-    vec3 colour;
+    vec4 colour;
     vec2 texCoord;
     vec3 normal;
     vec3 worldPos;
@@ -23,4 +25,6 @@ void main(void) {
     vec4 worldPos = modelMatrix * vec4(position, 1);
     OUT.worldPos = worldPos.xyz;
     gl_Position = projMatrix * viewMatrix * worldPos;
+   OUT.colour = nodeColour;
+
 }
