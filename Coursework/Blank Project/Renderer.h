@@ -17,25 +17,38 @@ public:
 	 void UpdateScene(float msec)	override;
 
 protected:
+
 	void BuildNodeLists(SceneNode* from);
 	void SortNodeLists();
 	void ClearNodeLists();
-	void SetTerrain(SceneNode* root);
-	void SetWater(SceneNode* root);
 
+	bool SetTerrain(SceneNode* root);
+	bool SetWater(SceneNode* root);
+	bool SetCubeMap();
+
+	void DrawSkybox();
 	void DrawNodes();
 	void DrawNode(SceneNode* n);
+
 	SceneNode* root;
-	Camera* camera;
+	Camera* camera;	
+	Light* light;
 
 	Shader* currentShader;
 	Shader* waterShader;
 	Shader* terrainShader;
+
+	Shader* skyboxShader;
+	Mesh* skyQuad;
+
 	GLuint texture;
 	GLuint textureBump;
+	GLuint cubeMap;
 
 
 	vector<SceneNode*> transparentNodeList;
 	vector<SceneNode*> nodeList;
+
+	Vector3 mapSize;
 
 };

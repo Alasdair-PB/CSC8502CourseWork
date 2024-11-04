@@ -7,6 +7,11 @@ public:
 	~Terrain(void) {};
 	void Update(float dt) override;
 
+	Vector3 GetMapSize(){ return mapSize; }
+
+
+
 protected:
 	SceneNode* ground;
+	Vector3 mapSize;
 };

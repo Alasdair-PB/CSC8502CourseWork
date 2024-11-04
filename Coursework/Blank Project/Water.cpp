@@ -9,9 +9,9 @@ Water::Water()
 	water ->SetModelScale(Vector3(10, 15, 5));
 	water->SetTexture(texture);
 	water->SetTransform(Matrix4::Translation(Vector3(0, 0, 0)) * Matrix4::Rotation(90.0f, Vector3(1, 0, 0)));
-	AddChild(water);
-
 	water->SetBoundingRadius(15.0f);
+
+	parent = (water);
 }
 
 
