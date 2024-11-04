@@ -4,6 +4,7 @@
 .vs/
 *.vcxproj.user
 *.vcxproj.filters
+*.sln
 *.suo
 *.user
 *.opendb
