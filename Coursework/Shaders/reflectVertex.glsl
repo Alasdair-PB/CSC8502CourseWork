@@ -25,6 +25,6 @@ void main(void) {
     vec4 worldPos = modelMatrix * vec4(position, 1);
     OUT.worldPos = worldPos.xyz;
     gl_Position = projMatrix * viewMatrix * worldPos;
-   OUT.colour = nodeColour;
+    OUT.colour = nodeColour;
 
 }

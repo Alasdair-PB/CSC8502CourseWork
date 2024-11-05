@@ -4,7 +4,7 @@
 class Terrain : public SceneNode 
 {
 	public:
-		Terrain(GLuint texture);
+		Terrain(GLuint texture, GLuint textureBump);
 		~Terrain(void) {};
 		void Update(float dt) override;
 

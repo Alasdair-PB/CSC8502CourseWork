@@ -3,12 +3,11 @@
 #include "Terrain.h"
 #include "Water.h"
 #include "../nclgl/Light.h"
+#include "../nclgl/Material.h"
 #include <algorithm>
 
 Renderer::Renderer(Window &parent) : OGLRenderer(parent)	
 {
-	camera = new Camera(0.0f, 0.0f, Vector3(0, 50, 750.0f));
-	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 
 	root = new SceneNode();
 
@@ -16,7 +15,9 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 		return; // Will throw errors as deleting shaders that have not been assigned on ~Renderer
 
 	// Map size setup in SetTerrain
-	light = new Light(mapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 1, 1, 1), mapSize.x);
+	light = new Light(mapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 1, 1, 1), mapSize.x * 0.5f);
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+	camera = new Camera(-45.0f, 0.0f, mapSize * Vector3(0.5f, 5.0f, 0.5f));
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -73,6 +74,8 @@ void Renderer::RenderScene()
 
 	DrawSkybox();
 	DrawNodes();
+
+	UpdateShaderMatrices();
 	ClearNodeLists();
 
 }
@@ -92,12 +95,10 @@ void Renderer::BuildNodeLists(SceneNode* from)
 	}
 }
 
-void Renderer::DrawNode(SceneNode* n) 
-{
-	if (n->GetMesh() && n->GetShader()) 
-	{
-		if (currentShader != n->GetShader()) 
-		{
+void Renderer::DrawNode(SceneNode* n) {
+
+	if (n->GetMesh() && n->GetShader()) {
+		if (currentShader != n->GetShader()) {
 			currentShader = n->GetShader();
 			BindShader(currentShader);
 			UpdateShaderMatrices();
@@ -107,27 +108,83 @@ void Renderer::DrawNode(SceneNode* n)
 		glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false, model.values);
 		glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
 
-		if (n->reflect) {
-			glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-			glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 2);
+		Material* material = n->GetMaterial();
+		bool renderFlag = false;
+
+		if (material) {
+			const auto& propertyMaps = material->GetProperties();
+
+			for (const auto& propertyMap : propertyMaps) {
+				for (const auto& [outerKey, innerMap] : propertyMap) {
+					for (const auto& [innerKey, value] : innerMap) {
+						int index = 0;
+						std::visit([&](auto&& val) {
+							using T = std::decay_t<decltype(val)>;
+							GLint location = glGetUniformLocation(currentShader->GetProgram(), innerKey.c_str());
+
+							if constexpr (std::is_same_v<T, GLuint>) 
+							{
+								glActiveTexture(GL_TEXTURE0 + index);
+								glBindTexture(GL_TEXTURE_2D, val); 
+								glUniform1i(location, index);
+							}
+							else if constexpr (std::is_same_v<T, Vector4>) 
+							{
+								glUniform4fv(location, 1, reinterpret_cast<const float*>(&val));
+							}
+							else if constexpr (std::is_same_v<T, Vector3>) 
+							{
+								glUniform3fv(location, 1, reinterpret_cast<const float*>(&val));
+							}
+							else if constexpr (std::is_same_v<T, Matrix4>) 
+							{
+								glUniformMatrix4fv(location, 1, false, val.values);
+							}
+							else if constexpr (std::is_same_v<T, int>) 
+							{
+								glUniform1i(location, val);
+							}
+							else if constexpr (std::is_same_v<T, Material::WorldValue>) 
+							{
+								switch (val) {
+								case Material::CameraPosition:
+									glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+									break;
+								case Material::CubeMap:
+									glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 2);
+									glActiveTexture(GL_TEXTURE2);
+									glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+									break;
+								case Material::LightRender:
+									renderFlag = true;
+									break;
+								default:
+									break;
+								}
+							}
+						}, value);
+					}
+				}
+			}
+		}
+		if (renderFlag) {
+			SetShaderLight(*light);
+			UpdateShaderMatrices();
 		}
 
-		currentTexture = n->GetTexture();
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, currentTexture);
-
-		if (n->reflect) {
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
-			modelMatrix = Matrix4::Translation(mapSize * 0.5f) * Matrix4::Scale(mapSize * 0.5f) * Matrix4::Rotation(90, Vector3(1, 0, 0));
-		}
-
-		// Just for testing
-		//modelMatrix = Matrix4::Translation(mapSize * 0.5f) * Matrix4::Scale(mapSize * 0.5f) * Matrix4::Rotation(90, Vector3(1, 0, 0));
-		// End of test code
-		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "useTexture"), currentTexture ? 1 : 0);
 		n->Draw(*this);
 	}
+}
+
+void Renderer::SortNodeLists()
+{
+	std::sort(transparentNodeList.rbegin(), transparentNodeList.rend(), SceneNode::CompareByCameraDistance);
+	std::sort(nodeList.begin(), nodeList.end(), [](SceneNode* a, SceneNode* b)
+		{
+			if (a->GetShader() == b->GetShader())
+				return SceneNode::CompareByCameraDistance(a, b);
+			return a->GetShader() < b->GetShader();
+		});
 }
 
 
@@ -149,11 +206,6 @@ void Renderer::DrawSkybox() {
 	glDepthMask(GL_TRUE);
 }
 
-void Renderer::SortNodeLists() {
-	std::sort(transparentNodeList.rbegin(), transparentNodeList.rend(), SceneNode::CompareByCameraDistance);
-	std::sort(nodeList.begin(), nodeList.end(), SceneNode::CompareByCameraDistance);
-}
-
 void Renderer::ClearNodeLists() {
 	transparentNodeList.clear();
 	nodeList.clear();
@@ -171,7 +223,7 @@ bool Renderer::SetTerrain(SceneNode* root)
 	SetTextureRepeating(*newTexture, true);
 	SetTextureRepeating(*newBumpTexture, true);
 
-	Shader* newTerrainShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl");
+	Shader* newTerrainShader = new Shader("bumpvertex.glsl", "bumpfragment.glsl");
 
 	texture.push_back(newTexture);
 	textureBump.push_back(newBumpTexture);
@@ -180,8 +232,7 @@ bool Renderer::SetTerrain(SceneNode* root)
 	if (!newTerrainShader->LoadSuccess())
 		return false;
 
-	Terrain* terrain = new Terrain(*newTexture);
-	terrain->reflect = false;
+	Terrain* terrain = new Terrain(*newTexture, *newBumpTexture);
 	terrain->SetShader(newTerrainShader);
 
 	mapSize = terrain->GetMapSize();
@@ -203,8 +254,7 @@ bool Renderer::SetWater(SceneNode* root)
 	shader.emplace_back(waterShader);
 
 
-	Water* water = new Water(*newTexture);
-	water->reflect = true;
+	Water* water = new Water(*newTexture, mapSize.x);
 	water->SetShader(waterShader);
 
 	root->AddChild(water);

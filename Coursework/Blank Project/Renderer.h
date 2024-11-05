@@ -4,8 +4,6 @@
 #include "../nclgl/SceneNode.h"
 #include "../nclgl/HeightMap.h"
 
-#include "Terrain.h"
-
 
 class Camera;
 

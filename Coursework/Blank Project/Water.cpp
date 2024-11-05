@@ -1,13 +1,18 @@
 #include "Water.h"
 
-Water::Water(GLuint texture)
+Water::Water(GLuint texture, float hSize)
 {
 	quad = Mesh::GenerateQuad();
 	SetMesh(quad);
-	SetColour(Vector4(0, 0, 0, 0.3f));
-	SetModelScale(Vector3(10, 15, 5));
-	SetTexture(texture);
-	SetTransform(Matrix4::Translation(Vector3(0, 0, 0)) * Matrix4::Rotation(90.0f, Vector3(1, 0, 0)));
+	SetModelScale(Vector3(hSize * 0.5f, hSize * 0.5f, hSize * 0.5f));
+
+	SetColour(Vector4(0, 0, 0, 1));
+
+	GetMaterial()->AddProperty("diffuseTex", texture);
+	GetMaterial()->AddProperty("cameraPos", Material::CameraPosition);
+	GetMaterial()->AddProperty("cubeMap", Material::CubeMap);
+
+	SetTransform(Matrix4::Translation(Vector3(hSize * 0.5f,0, hSize * 0.5f)) * Matrix4::Rotation(90.0f, Vector3(1, 0, 0)));
 	SetBoundingRadius(15.0f);
 }
 

@@ -3,6 +3,7 @@
 SceneNode::SceneNode(Mesh* mesh, Vector4 colour) {
 	this->mesh = mesh;
 	this->colour = colour;
+	this->material = new Material(shader);
 	parent = NULL;
 	boundingRadius = 1.0f;
 	distanceFromCamera = 0.0f;
