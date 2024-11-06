@@ -10,9 +10,10 @@ Water::Water(GLuint texture, float hSize)
 
 	GetMaterial()->AddProperty("diffuseTex", texture);
 
-	GetMaterial()->AddProperty("transparency", 0.85f);
+	GetMaterial()->AddProperty("transparency", 0.5f);
 	GetMaterial()->AddProperty("depthDistance", 0.5f);
-
+	GetMaterial()->AddProperty("foamCutoff", 0.99f);
+	GetMaterial()->AddProperty("foamSpeed", 4.0f);
 
 	GetMaterial()->AddProperty("dt", Material::DeltaTime);
 	GetMaterial()->AddProperty("uFarPlane", Material::FarPlane);
