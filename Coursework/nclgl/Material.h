@@ -14,8 +14,8 @@ public:
         properties = std::vector<std::unordered_map<std::string, std::unordered_map<std::string, PropertyValue>>>();
     }
 
-    enum WorldValue { CameraPosition, DeltaTime, CubeMap, LightRender };
-    using PropertyValue = std::variant<Vector4, GLuint, Vector3, Matrix4, int, std::string, WorldValue>;
+    enum WorldValue { CameraPosition, DeltaTime, CubeMap, LightRender, FarPlane};
+    using PropertyValue = std::variant<Vector4, GLuint, Vector3, Matrix4, int, std::string, WorldValue, float>;
 
     void SetShader(Shader* shader) { this->shader = shader; }
     Shader* GetShader() const { return shader; }
@@ -28,6 +28,7 @@ public:
             else if constexpr (std::is_same_v<T, Vector3>) return "vector3";
             else if constexpr (std::is_same_v<T, Matrix4>) return "matrix4";
             else if constexpr (std::is_same_v<T, int>) return "int";
+            else if constexpr (std::is_same_v<T, float>) return "float";
             else if constexpr (std::is_same_v<T, std::string>) return "string";
             else if constexpr (std::is_same_v<T, Material::WorldValue>) return "worldValue";
             else return "unknown";

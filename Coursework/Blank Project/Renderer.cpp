@@ -111,7 +111,8 @@ void Renderer::DrawNode(SceneNode* n) {
 		Material* material = n->GetMaterial();
 		bool renderFlag = false;
 
-		if (material) {
+		if (material) 
+		{
 			const auto& propertyMaps = material->GetProperties();
 
 			for (const auto& propertyMap : propertyMaps) {
@@ -144,6 +145,10 @@ void Renderer::DrawNode(SceneNode* n) {
 							{
 								glUniform1i(location, val);
 							}
+							else if constexpr (std::is_same_v<T, float>)
+							{
+								glUniform1f(location, val);
+							}
 							else if constexpr (std::is_same_v<T, Material::WorldValue>) 
 							{
 								switch (val) {
@@ -154,6 +159,9 @@ void Renderer::DrawNode(SceneNode* n) {
 									glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 2);
 									glActiveTexture(GL_TEXTURE2);
 									glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+									break;
+								case Material::FarPlane:
+									glUniform1f(location, 15000.0f);
 									break;
 								case Material::LightRender:
 									renderFlag = true;
@@ -244,7 +252,7 @@ bool Renderer::SetTerrain(SceneNode* root)
 bool Renderer::SetWater(SceneNode* root)
 {
 	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "water.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0));
-	Shader* waterShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl"); //Shader("SceneVertex.glsl", "SceneFragment.glsl"); //
+	Shader* waterShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl"); 
 	SetTextureRepeating(*newTexture, true);
 
 	if (!waterShader->LoadSuccess())
