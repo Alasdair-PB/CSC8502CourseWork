@@ -40,6 +40,8 @@ protected:
 	Shader* currentShader;
 	GLuint currentTexture;
 	GLuint currentBumpMap;
+	GLuint depthFBO;
+	GLuint depthTex;
 
 	Mesh* skyQuad;
 	GLuint cubeMap;

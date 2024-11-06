@@ -24,6 +24,24 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
+
+	// Bind depth Buffer
+	glGenFramebuffers(1, &depthFBO);
+	glGenTextures(1, &depthTex);
+
+	glBindTexture(GL_TEXTURE_2D, depthTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	// End bind depth buffer
+
+
 	init = true;
 }
 
@@ -53,7 +71,9 @@ Renderer::~Renderer(void)
 	delete skyboxShader;
 
 	glDeleteTextures(1, &currentBumpMap);
-	glDeleteTextures(1, &currentTexture);
+	glDeleteTextures(1, &currentTexture);	
+	glDeleteTextures(1, &depthTex);
+	glDeleteTextures(1, &depthFBO);
 
 }
 
@@ -65,10 +85,21 @@ void Renderer::UpdateScene(float dt)
 	root->Update(dt);
 }
 
-void Renderer::RenderScene()	
-{
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+void Renderer::RenderScene() {
+    glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); 
+    for (auto& node : nodeList) {
+        DrawNode(node); 
+    }
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+
+
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	BuildNodeLists(root);
 	SortNodeLists();
 
@@ -77,8 +108,9 @@ void Renderer::RenderScene()
 
 	UpdateShaderMatrices();
 	ClearNodeLists();
-
 }
+
+
 
 void Renderer::BuildNodeLists(SceneNode* from) 
 {
@@ -163,6 +195,20 @@ void Renderer::DrawNode(SceneNode* n) {
 								case Material::FarPlane:
 									glUniform1f(location, 15000.0f);
 									break;
+
+								case Material::ProjMatrix:
+									glUniformMatrix4fv(location, 1, false, (float*)&this->projMatrix);
+									break;
+
+								case Material::ViewMatrix:
+									glUniformMatrix4fv(location, 1, false, (float*)&camera->BuildViewMatrix());
+									break;
+
+								case Material::DepthTexture:
+									glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 3);
+									glActiveTexture(GL_TEXTURE3);
+									glBindTexture(GL_TEXTURE_2D, depthTex);
+									break;
 								case Material::LightRender:
 									renderFlag = true;
 									break;
@@ -197,9 +243,12 @@ void Renderer::SortNodeLists()
 
 
 void Renderer::DrawNodes() {
+
+
 	for (const auto& i : nodeList) {
 		DrawNode(i);
 	}
+
 	for (const auto& i : transparentNodeList) {
 		DrawNode(i);
 	}

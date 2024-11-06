@@ -6,20 +6,21 @@ Water::Water(GLuint texture, float hSize)
 	SetMesh(quad);
 	SetModelScale(Vector3(hSize * 0.5f, hSize * 0.5f, hSize * 0.5f));
 
-	SetColour(Vector4(0, 0, 0, 1));
+	SetColour(Vector4(0, 0, 0, 0.5f));
 
 	GetMaterial()->AddProperty("diffuseTex", texture);
+	GetMaterial()->AddProperty("transparency", 0.8f);
 
-	GetMaterial()->AddProperty("transparency", 0.5f);
-	GetMaterial()->AddProperty("depthDistance", 0.5f);
-	GetMaterial()->AddProperty("foamCutoff", 0.99f);
+	GetMaterial()->AddProperty("foamCutoff", 0.4f);
 	GetMaterial()->AddProperty("foamSpeed", 4.0f);
 
+	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
+	GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
 	GetMaterial()->AddProperty("dt", Material::DeltaTime);
 	GetMaterial()->AddProperty("uFarPlane", Material::FarPlane);
 	GetMaterial()->AddProperty("cameraPos", Material::CameraPosition);
 	GetMaterial()->AddProperty("cubeMap", Material::CubeMap);
-
+	GetMaterial()->AddProperty("depthTex", Material::DepthTexture);
 
 	SetTransform(Matrix4::Translation(Vector3(hSize * 0.5f,100, hSize * 0.5f)) * Matrix4::Rotation(90.0f, Vector3(1, 0, 0)));
 	SetBoundingRadius(15.0f);

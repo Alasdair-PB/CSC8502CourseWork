@@ -14,7 +14,8 @@ public:
         properties = std::vector<std::unordered_map<std::string, std::unordered_map<std::string, PropertyValue>>>();
     }
 
-    enum WorldValue { CameraPosition, DeltaTime, CubeMap, LightRender, FarPlane};
+    enum WorldValue { CameraPosition, DeltaTime, CubeMap, LightRender, FarPlane, DepthTexture, ProjMatrix, ViewMatrix
+    };
     using PropertyValue = std::variant<Vector4, GLuint, Vector3, Matrix4, int, std::string, WorldValue, float>;
 
     void SetShader(Shader* shader) { this->shader = shader; }
