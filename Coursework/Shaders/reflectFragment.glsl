@@ -13,7 +13,6 @@ uniform float transparency;
 uniform float foamCutoff;
 uniform float foamSpeed;
 uniform float uFarPlane;
-uniform float dt;
 
 
 uniform vec2 dimensions;

@@ -39,6 +39,7 @@ protected:
 	SceneNode* root;
 	Camera* camera;	
 	Light* light;
+	float dt;
 
 
 	Shader* skyboxShader;

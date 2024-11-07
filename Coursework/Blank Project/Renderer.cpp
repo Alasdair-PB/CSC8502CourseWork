@@ -21,7 +21,7 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	light = new Light(mapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 1, 1, 1), mapSize.x * 0.5f);
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	camera = new Camera(-45.0f, 0.0f, mapSize * Vector3(0.5f, 5.0f, 0.5f));
-
+	this->dt = 0;
 	// Bind depth Buffer---------------------------------------------------------------------------------
 	glGenFramebuffers(1, &depthFBO);
 	glGenTextures(1, &depthTex);
@@ -163,6 +163,7 @@ void Renderer::UpdateScene(float dt)
 	camera->UpdateCamera(dt);
 	viewMatrix = camera->BuildViewMatrix();
 	root->Update(dt);
+	this->dt += dt;
 }
 
 void Renderer::RenderScene() 
@@ -281,7 +282,9 @@ void Renderer::DrawNode(SceneNode* n) {
 								case Material::ViewMatrix:
 									glUniformMatrix4fv(location, 1, false, (float*)&camera->BuildViewMatrix());
 									break;
-
+								case Material::DeltaTime:
+									glUniform1f(location, this->dt);
+									break;
 								case Material::Dimensions:
 									glUniform2fv(location,1, (float*)&( Vector2(width, height)));
 									break;
@@ -420,7 +423,6 @@ bool Renderer::SetWater(SceneNode* root)
 
 	texture.push_back(newTexture);
 	shader.emplace_back(waterShader);
-
 
 	Water* water = new Water(*newTexture, mapSize.x);
 	water->SetShader(waterShader);

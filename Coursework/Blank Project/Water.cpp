@@ -13,6 +13,8 @@ Water::Water(GLuint texture, float hSize)
 
 	GetMaterial()->AddProperty("foamCutoff", 0.4f);
 	GetMaterial()->AddProperty("foamSpeed", 4.0f);
+	GetMaterial()->AddProperty("scrollSpeed", 1.0f);
+
 
 	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
 	GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
