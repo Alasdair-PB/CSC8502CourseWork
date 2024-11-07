@@ -25,12 +25,14 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 
-	// Bind depth Buffer
+	// Bind depth Buffer---------------------------------------------------------------------------------
 	glGenFramebuffers(1, &depthFBO);
 	glGenTextures(1, &depthTex);
 
 	glBindTexture(GL_TEXTURE_2D, depthTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -39,7 +41,8 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	// End bind depth buffer
+
+	// End bind depth buffer---------------------------------------------------------------------------------
 
 
 	init = true;
@@ -86,46 +89,34 @@ void Renderer::UpdateScene(float dt)
 }
 
 void Renderer::RenderScene() {
-    glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); 
-    for (auto& node : nodeList) {
-        DrawNode(node); 
-    }
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	BuildNodeLists(root);
 	SortNodeLists();
-
 	DrawSkybox();
+
+
+	// Write to depth texture------------------------------------------
+    glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); 
+    DrawOpaque();
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	// ------------------------------------------------------------------
+
+
+
+
+	//BuildNodeLists(root);
+	//SortNodeLists();
 	DrawNodes();
 
 	UpdateShaderMatrices();
 	ClearNodeLists();
 }
 
-
-
-void Renderer::BuildNodeLists(SceneNode* from) 
-{
-	Vector3 dir = from->GetWorldTransform().GetPositionVector() - camera->GetPosition();
-	from->SetCameraDistance(Vector3::Dot(dir, dir));
-
-	if (from->GetColour().w < 1.0f) 
-		transparentNodeList.push_back(from);
-	else 
-		nodeList.push_back(from);
-
-	for (auto i = from->GetChildIteratorStart(); i != from->GetChildIteratorEnd(); ++i) {
-		BuildNodeLists(*i);
-	}
-}
 
 void Renderer::DrawNode(SceneNode* n) {
 
@@ -204,10 +195,11 @@ void Renderer::DrawNode(SceneNode* n) {
 									glUniformMatrix4fv(location, 1, false, (float*)&camera->BuildViewMatrix());
 									break;
 
-								case Material::DepthTexture:
+								case Material::DepthTexture:									
 									glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 3);
 									glActiveTexture(GL_TEXTURE3);
 									glBindTexture(GL_TEXTURE_2D, depthTex);
+
 									break;
 								case Material::LightRender:
 									renderFlag = true;
@@ -230,6 +222,23 @@ void Renderer::DrawNode(SceneNode* n) {
 	}
 }
 
+
+
+void Renderer::BuildNodeLists(SceneNode* from)
+{
+	Vector3 dir = from->GetWorldTransform().GetPositionVector() - camera->GetPosition();
+	from->SetCameraDistance(Vector3::Dot(dir, dir));
+
+	if (from->GetColour().w < 1.0f)
+		transparentNodeList.push_back(from);
+	else
+		nodeList.push_back(from);
+
+	for (auto i = from->GetChildIteratorStart(); i != from->GetChildIteratorEnd(); ++i) {
+		BuildNodeLists(*i);
+	}
+}
+
 void Renderer::SortNodeLists()
 {
 	std::sort(transparentNodeList.rbegin(), transparentNodeList.rend(), SceneNode::CompareByCameraDistance);
@@ -241,13 +250,23 @@ void Renderer::SortNodeLists()
 		});
 }
 
+void Renderer::ClearNodeLists() {
+	transparentNodeList.clear();
+	nodeList.clear();
+}
+
+
+void Renderer::DrawOpaque() 
+{
+	for (const auto& i : nodeList) {
+		DrawNode(i);
+	}
+}
 
 void Renderer::DrawNodes() {
 
 
-	for (const auto& i : nodeList) {
-		DrawNode(i);
-	}
+	DrawOpaque();
 
 	for (const auto& i : transparentNodeList) {
 		DrawNode(i);
@@ -261,11 +280,6 @@ void Renderer::DrawSkybox() {
 	UpdateShaderMatrices();
 	skyQuad->Draw();
 	glDepthMask(GL_TRUE);
-}
-
-void Renderer::ClearNodeLists() {
-	transparentNodeList.clear();
-	nodeList.clear();
 }
 
 

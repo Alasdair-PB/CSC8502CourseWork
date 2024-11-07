@@ -27,6 +27,7 @@ protected:
 	void DrawSkybox();
 	void DrawNodes();
 	void DrawNode(SceneNode* n);
+	void DrawOpaque();
 
 	void DrawNodeReflective();
 

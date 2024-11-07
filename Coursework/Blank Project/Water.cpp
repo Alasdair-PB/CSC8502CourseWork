@@ -6,7 +6,7 @@ Water::Water(GLuint texture, float hSize)
 	SetMesh(quad);
 	SetModelScale(Vector3(hSize * 0.5f, hSize * 0.5f, hSize * 0.5f));
 
-	SetColour(Vector4(0, 0, 0, 0.5f));
+	SetColour(Vector4(0, 0, 1, 0.5f));
 
 	GetMaterial()->AddProperty("diffuseTex", texture);
 	GetMaterial()->AddProperty("transparency", 0.8f);
@@ -16,6 +16,7 @@ Water::Water(GLuint texture, float hSize)
 
 	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
 	GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
+
 	GetMaterial()->AddProperty("dt", Material::DeltaTime);
 	GetMaterial()->AddProperty("uFarPlane", Material::FarPlane);
 	GetMaterial()->AddProperty("cameraPos", Material::CameraPosition);

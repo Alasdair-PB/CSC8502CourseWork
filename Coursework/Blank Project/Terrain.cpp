@@ -7,7 +7,7 @@ Terrain::Terrain(GLuint texture, GLuint textureBump)
 	mapSize = heightMap->GetHeightmapSize();
 
 	SetMesh(heightMap);
-	SetColour(Vector4(0, 0, 0, 1));
+	SetColour(Vector4(0, 0, 0, 1.1f));
 
 	GetMaterial()->AddProperty("diffuseTex", texture);
 	GetMaterial()->AddProperty("bumpTex", textureBump);
