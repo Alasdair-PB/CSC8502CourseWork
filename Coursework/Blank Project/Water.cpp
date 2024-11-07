@@ -25,7 +25,7 @@ Water::Water(GLuint texture, float hSize)
 	GetMaterial()->AddProperty("cubeMap", Material::CubeMap);
 	GetMaterial()->AddProperty("depthTex", Material::DepthTexture);
 
-	SetTransform(Matrix4::Translation(Vector3(hSize * 0.5f,100, hSize * 0.5f)) * Matrix4::Rotation(90.0f, Vector3(1, 0, 0)));
+	SetTransform(Matrix4::Translation(Vector3(hSize * 0.5f, 100, hSize * 0.5f)) * Matrix4::Rotation(270.0f, Vector3(1, 0, 0)));
 	SetBoundingRadius(15.0f);
 }
 

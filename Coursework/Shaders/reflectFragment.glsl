@@ -43,8 +43,6 @@ void main(void)
     vec3 reflectDir = reflect(-viewDir, normalize(IN.normal)); 
     vec4 reflectTex = texture(cubeTex, reflectDir); 
 
-
-
     vec2 uv = gl_FragCoord.xy / vec2(dimensions.x,dimensions.y);
     float sceneDepth = texture(depthTex, uv).r;
 

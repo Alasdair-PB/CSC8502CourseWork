@@ -22,14 +22,19 @@ protected:
 
 	bool SetTerrain(SceneNode* root);
 	bool SetWater(SceneNode* root);
-	bool SetCubeMap();
+
 
 	void DrawSkybox();
 	void DrawNodes();
 	void DrawNode(SceneNode* n);
 	void DrawOpaque();
+	void DrawTransparent();
+	void CombineBuffers();
+	bool SetCubeMap();
 
+	void DrawPointLights();
 	void DrawNodeReflective();
+	void GenerateScreenTexture(GLuint& into, bool depth = false);
 
 	SceneNode* root;
 	Camera* camera;	
@@ -45,6 +50,8 @@ protected:
 	GLuint depthTex;
 
 	Mesh* skyQuad;
+	Mesh* sphere; // Light volume
+
 	GLuint cubeMap;
 
 	vector<Shader*> shader;
@@ -53,6 +60,23 @@ protected:
 
 	vector<SceneNode*> transparentNodeList;
 	vector<SceneNode*> nodeList;
+
+
+
+	Shader* sceneShader; // Shader to fill our GBuffers
+	Shader* pointlightShader; // Shader to calculate lighting
+	Shader* combineShader; // Shader to combine buffers
+
+	GLuint bufferFBO; // FBO for our G-Buffer pass
+	GLuint bufferColourTex; // Albedo texture
+	GLuint bufferNormalTex; // Normals texture
+	GLuint bufferDepthTex; // Depth texture
+
+	GLuint pointLightFBO; // FBO for lighting pass
+	GLuint lightDiffuseTex; // Store diffuse lighting
+	GLuint lightSpecularTex; // Store specular lighting
+	Light* pointLights; // Array of lighting data
+
 
 	Vector3 mapSize;
 
