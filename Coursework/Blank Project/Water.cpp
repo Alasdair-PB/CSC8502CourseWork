@@ -16,6 +16,8 @@ Water::Water(GLuint texture, float hSize)
 
 	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
 	GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
+	GetMaterial()->AddProperty("dimensions", Material::Dimensions);
+
 
 	GetMaterial()->AddProperty("dt", Material::DeltaTime);
 	GetMaterial()->AddProperty("uFarPlane", Material::FarPlane);

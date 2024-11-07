@@ -195,6 +195,10 @@ void Renderer::DrawNode(SceneNode* n) {
 									glUniformMatrix4fv(location, 1, false, (float*)&camera->BuildViewMatrix());
 									break;
 
+								case Material::Dimensions:
+									glUniform2fv(location,1, (float*)&( Vector2(width, height)));
+									break;
+
 								case Material::DepthTexture:									
 									glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 3);
 									glActiveTexture(GL_TEXTURE3);

@@ -15,11 +15,8 @@ uniform float foamSpeed;
 uniform float uFarPlane;
 uniform float dt;
 
-float linearizeDepth(float depth)
-{
-    float near = 1.0; 
-    return (2.0 * near) / (1500.0 + near - depth * (1500.0 - near));
-}
+
+uniform vec2 dimensions;
 
 vec3 depthToWorldPos(vec2 uv, float depth) 
 { 
@@ -48,7 +45,7 @@ void main(void)
 
 
 
-    vec2 uv = gl_FragCoord.xy / vec2(1280.0, 720.0);
+    vec2 uv = gl_FragCoord.xy / vec2(dimensions.x,dimensions.y);
     float sceneDepth = texture(depthTex, uv).r;
 
     vec3 sceneWorldPos = depthToWorldPos(uv, sceneDepth);
@@ -57,6 +54,8 @@ void main(void)
     vec3 fragmentWorldPos = depthToWorldPos(uv, fragmentDepth);
 
     float depthDiff = length(fragmentWorldPos - sceneWorldPos);
+
+
     
     if (depthDiff >= 5.0) {  
         fragColour = (reflectTex * 0.5) + (diffuse * 0.5);

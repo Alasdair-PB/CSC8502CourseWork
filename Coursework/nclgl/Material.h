@@ -14,7 +14,7 @@ public:
         properties = std::vector<std::unordered_map<std::string, std::unordered_map<std::string, PropertyValue>>>();
     }
 
-    enum WorldValue { CameraPosition, DeltaTime, CubeMap, LightRender, FarPlane, DepthTexture, ProjMatrix, ViewMatrix
+    enum WorldValue { CameraPosition, DeltaTime, CubeMap, LightRender, FarPlane, DepthTexture, ProjMatrix, ViewMatrix, Dimensions
     };
     using PropertyValue = std::variant<Vector4, GLuint, Vector3, Matrix4, int, std::string, WorldValue, float>;
 
