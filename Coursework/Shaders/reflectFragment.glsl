@@ -12,7 +12,6 @@ uniform mat4 viewMatrix;
 uniform float transparency;
 uniform float foamCutoff;
 uniform float foamSpeed;
-uniform float uFarPlane;
 
 
 uniform vec2 dimensions;

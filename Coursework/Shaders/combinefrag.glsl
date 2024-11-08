@@ -18,6 +18,7 @@ void main(void) {
     fragColour.xyz = diffuse * 0.1; // ambient
     fragColour.xyz += diffuse * light; // lambert
     fragColour.xyz += specular; // Specular
-    fragColour.a = clamp(fragColour.r + fragColour.g + fragColour.b, 0.0, 1.0);
+    fragColour.a = 1.0f;
+    //fragColour.a = clamp(fragColour.r + fragColour.g + fragColour.b, 0.0, 1.0);
 
 }

@@ -159,11 +159,12 @@ Renderer::~Renderer(void)
 
 
 void Renderer::UpdateScene(float dt) 
-{
+{	
+	this->dt += dt;
 	camera->UpdateCamera(dt);
 	viewMatrix = camera->BuildViewMatrix();
 	root->Update(dt);
-	this->dt += dt;
+
 }
 
 void Renderer::RenderScene() 
@@ -187,13 +188,14 @@ void Renderer::RenderScene()
 	DrawNodes();
 	UpdateShaderMatrices();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+
 	modelMatrix.ToIdentity();
 	viewMatrix = camera->BuildViewMatrix();
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 
 
 	//DrawPointLights();
-    //CombineBuffers();	
+   //CombineBuffers();	
 
 	//DrawTransparent();
 	//UpdateShaderMatrices();

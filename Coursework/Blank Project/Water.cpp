@@ -13,7 +13,8 @@ Water::Water(GLuint texture, float hSize)
 
 	GetMaterial()->AddProperty("foamCutoff", 0.4f);
 	GetMaterial()->AddProperty("foamSpeed", 4.0f);
-	GetMaterial()->AddProperty("scrollSpeed", 1.0f);
+	GetMaterial()->AddProperty("scrollSpeed", 0.01f);	
+	GetMaterial()->AddProperty("waterScale", 15.0f);
 
 
 	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
@@ -22,7 +23,6 @@ Water::Water(GLuint texture, float hSize)
 
 
 	GetMaterial()->AddProperty("dt", Material::DeltaTime);
-	GetMaterial()->AddProperty("uFarPlane", Material::FarPlane);
 	GetMaterial()->AddProperty("cameraPos", Material::CameraPosition);
 	GetMaterial()->AddProperty("cubeMap", Material::CubeMap);
 	GetMaterial()->AddProperty("depthTex", Material::DepthTexture);
