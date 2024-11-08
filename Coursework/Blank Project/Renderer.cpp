@@ -14,7 +14,7 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	root = new SceneNode();
 
-	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root)) //
+	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root)) //
 		return; // Will throw errors as deleting shaders that have not been assigned on ~Renderer
 
 	// Map size setup in SetTerrain
@@ -411,6 +411,25 @@ bool Renderer::SetTerrain(SceneNode* root)
 	mapSize = terrain->GetMapSize();
 	root->AddChild(terrain);
 
+	return true;
+}
+
+
+bool Renderer::SetTree(SceneNode* root) 
+{
+	Mesh* myMesh = Mesh::LoadFromMeshFile("Tree.msh");
+	Shader* newShader = new Shader("SceneVertex.glsl", "SceneFragment.glsl");
+	shader.emplace_back(newShader);
+
+	if (!myMesh)
+		return false;
+
+	SceneNode* tree = new SceneNode(myMesh, Vector4(1, 0, 0, 1));
+	tree->SetShader(newShader);
+	tree->SetTransform(Matrix4::Translation(Vector3(mapSize.x * 0.5f, 165, mapSize.x * 0.5f)));
+	tree->SetModelScale(Vector3(25, 25, 25));
+
+	root->AddChild(tree);
 	return true;
 }
 

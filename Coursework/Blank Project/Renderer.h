@@ -22,7 +22,7 @@ protected:
 
 	bool SetTerrain(SceneNode* root);
 	bool SetWater(SceneNode* root);
-
+	bool SetTree(SceneNode* root);
 
 	void DrawSkybox();
 	void DrawNodes();
