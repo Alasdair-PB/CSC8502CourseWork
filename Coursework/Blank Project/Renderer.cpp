@@ -23,6 +23,7 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	light = new Light(mapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 0.8f, 0.5f, 1), mapSize.x * 0.5f);
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	camera = new Camera(-45.0f, 0.0f, mapSize * Vector3(0.5f, 5.0f, 0.5f));
+
 	this->dt = 0;
 	// Bind depth Buffer---------------------------------------------------------------------------------
 	glGenFramebuffers(1, &depthFBO);
@@ -192,8 +193,8 @@ void Renderer::RenderScene()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0); 
 
 	modelMatrix.ToIdentity();
-	viewMatrix = camera->BuildViewMatrix();
-	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+	//viewMatrix = camera->BuildViewMatrix();
+	//projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 
 
 	//DrawPointLights();
@@ -225,6 +226,7 @@ void Renderer::DrawNode(SceneNode* n) {
 
 		Material* material = n->GetMaterial();
 		bool renderFlag = false;
+		bool faceCulling = true;
 
 		if (material) 
 		{
@@ -270,10 +272,9 @@ void Renderer::DrawNode(SceneNode* n) {
 								for (int i = 0; i < myMesh->GetSubMeshCount(); ++i) 
 								{
 									glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
-
 									glActiveTexture(GL_TEXTURE0);
 									glBindTexture(GL_TEXTURE_2D, val[i]);
-									myMesh->DrawSubMesh(i);
+									//myMesh->DrawSubMesh(i);
 								}
 							}
 							else if constexpr (std::is_same_v<T, Material::WorldValue>) 
@@ -304,6 +305,9 @@ void Renderer::DrawNode(SceneNode* n) {
 								case Material::Dimensions:
 									glUniform2fv(location,1, (float*)&( Vector2(width, height)));
 									break;
+								case Material::DualFace:
+									faceCulling = false;
+									break;
 
 								case Material::DepthTexture:									
 									glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 3);
@@ -329,8 +333,14 @@ void Renderer::DrawNode(SceneNode* n) {
 			UpdateShaderMatrices();
 		}
 
+		if (faceCulling == false)
+			glDisable(GL_CULL_FACE);
 
 		n->Draw(*this);
+
+		if (faceCulling == false)
+			glEnable(GL_CULL_FACE);
+
 	}
 }
 
@@ -430,10 +440,12 @@ bool Renderer::SetTerrain(SceneNode* root)
 }
 
 
-bool Renderer::SetTree(SceneNode* root) 
+
+
+bool Renderer::SetTree(SceneNode* root)
 {
-	Mesh* myMesh = Mesh::LoadFromMeshFile("Tree.msh");
-	Shader* newShader = new Shader("TexturedVertex.glsl", "TexturedFragment.glsl");
+	Mesh* myMesh = Mesh::LoadFromMeshFile("Leaves.msh");
+	Shader* newShader = new Shader("TexturedVertex.glsl", "TexturedFragment.glsl", "Geometry.glsl");
 	shader.emplace_back(newShader);
 
 	if (!myMesh)
@@ -442,7 +454,7 @@ bool Renderer::SetTree(SceneNode* root)
 	SceneNode* tree = new SceneNode(myMesh, Vector4(0, 0, 0, 1));
 	tree->SetShader(newShader);
 
-	MeshMaterial* material = new MeshMaterial("Tree.mat");
+	MeshMaterial* material = new MeshMaterial("Leaves.mat");
 	std::vector<GLuint> textures(myMesh->GetSubMeshCount());
 
 	for (int i = 0; i < myMesh->GetSubMeshCount(); ++i) {
@@ -458,14 +470,62 @@ bool Renderer::SetTree(SceneNode* root)
 	}
 
 	tree->GetMaterial()->AddProperty("Diffuse", textures);
+	tree->GetMaterial()->AddProperty("dt", Material::DeltaTime);
+	tree->GetMaterial()->AddProperty("cameraPosition", Material::CameraPosition);
+
+	tree->GetMaterial()->AddProperty("faceCullOff", Material::DualFace);
+
+	tree->GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
+	tree->GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
+
 	delete material;
 
-
-	//GetMaterial()->AddProperty("transparency", 0.8f);
 	tree->SetTransform(Matrix4::Translation(Vector3(mapSize.x * 0.5f, 165, mapSize.x * 0.5f)));
 	tree->SetModelScale(Vector3(25, 25, 25));
 
+
+
+
+	Mesh* myTrunkMesh = Mesh::LoadFromMeshFile("Trunk.msh");
+	Shader* newTrunkShader = new Shader("TexturedVertex.glsl", "TexturedFragment.glsl");
+	shader.emplace_back(newTrunkShader);
+
+	if (!myTrunkMesh)
+		return false;
+
+	SceneNode* trunk = new SceneNode(myTrunkMesh, Vector4(0, 0, 0, 1));
+	trunk->SetShader(newTrunkShader);
+
+	MeshMaterial* materialTrunk = new MeshMaterial("Trunk.mat");
+	std::vector<GLuint> texturesTrunk(myTrunkMesh->GetSubMeshCount());
+
+	for (int i = 0; i < myTrunkMesh->GetSubMeshCount(); ++i) {
+		const MeshMaterialEntry* matEntry = materialTrunk->GetMaterialForLayer(i);
+		const string* filename = nullptr;
+		matEntry->GetEntry("Diffuse", &filename);
+		string path = TEXTUREDIR + *filename;
+
+		GLuint texID = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_AUTO,
+			SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y);
+
+		texturesTrunk[i] = texID;
+	}
+
+	trunk->GetMaterial()->AddProperty("Diffuse", texturesTrunk);
+	trunk->GetMaterial()->AddProperty("dt", Material::DeltaTime);
+
+	delete materialTrunk;
+
+	trunk->SetTransform(Matrix4::Translation(Vector3(mapSize.x * 0.5f, 165, mapSize.x * 0.5f)));
+	trunk->SetModelScale(Vector3(25, 25, 25));
+
+
+
+
+
 	root->AddChild(tree);
+	root->AddChild(trunk);
+
 	return true;
 }
 

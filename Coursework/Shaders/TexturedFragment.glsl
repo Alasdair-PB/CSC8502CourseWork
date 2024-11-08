@@ -1,18 +1,24 @@
 #version 330 core
-uniform sampler2D diffuseTex ;
 
-in Vertex {
-vec2 texCoord ;
-} IN ;
+uniform sampler2D diffuseTex;  
+uniform vec3 cameraPosition;   
 
-out vec4 fragColour ;
+in Vertex{
+    vec4 colour;
+    vec2 texCoord;
+    vec3 normal;
+} IN;
 
-void main ( void ) 
+out vec4 fragColour;         
+
+void main(void) 
 {
-	fragColour = texture (diffuseTex, IN.texCoord);
-	//fragColour = texture ( diffuseTex , IN.texCoord ).rgba ; // Allowed
-	//fragColour = texture ( diffuseTex , IN.texCoord ).xyzw ; // Allowed
-	//fragColour = texture ( diffuseTex , IN.texCoord ).rgzw ; // DISallowed !
-	//fragColour = texture ( diffuseTex , IN.texCoord ).bgra ; // Swizzling
-	//fragColour = texture ( diffuseTex , IN.texCoord ).xxxw ; // Swizzling 
+    vec3 viewDir = normalize(cameraPosition - IN.normal); 
+    float cosTheta = dot(IN.normal, viewDir); 
+    float fresnel = pow(1.0 - cosTheta, 5.0);  
+
+    vec4 diffuse = texture(diffuseTex, IN.texCoord);  
+        vec4 rimColor = vec4(fresnel, fresnel, fresnel, 1.0); 
+
+    fragColour = diffuse + rimColor; 
 }
