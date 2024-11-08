@@ -4,6 +4,8 @@
 #include "Water.h"
 #include "../nclgl/Light.h"
 #include "../nclgl/Material.h"
+#include "../nclgl/MeshMaterial.h"
+
 #include <algorithm>
 
 const int LIGHT_NUM = 32;
@@ -18,7 +20,7 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 		return; // Will throw errors as deleting shaders that have not been assigned on ~Renderer
 
 	// Map size setup in SetTerrain
-	light = new Light(mapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 1, 1, 1), mapSize.x * 0.5f);
+	light = new Light(mapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 0.8f, 0.5f, 1), mapSize.x * 0.5f);
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	camera = new Camera(-45.0f, 0.0f, mapSize * Vector3(0.5f, 5.0f, 0.5f));
 	this->dt = 0;
@@ -262,6 +264,18 @@ void Renderer::DrawNode(SceneNode* n) {
 							{
 								glUniform1f(location, val);
 							}
+							else if constexpr (std::is_same_v<T, std::vector<GLuint>>) 
+							{
+								Mesh* myMesh = n->GetMesh();
+								for (int i = 0; i < myMesh->GetSubMeshCount(); ++i) 
+								{
+									glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
+
+									glActiveTexture(GL_TEXTURE0);
+									glBindTexture(GL_TEXTURE_2D, val[i]);
+									myMesh->DrawSubMesh(i);
+								}
+							}
 							else if constexpr (std::is_same_v<T, Material::WorldValue>) 
 							{
 								switch (val) {
@@ -310,6 +324,7 @@ void Renderer::DrawNode(SceneNode* n) {
 			}
 		}
 		if (renderFlag) {
+
 			SetShaderLight(*light);
 			UpdateShaderMatrices();
 		}
@@ -418,14 +433,35 @@ bool Renderer::SetTerrain(SceneNode* root)
 bool Renderer::SetTree(SceneNode* root) 
 {
 	Mesh* myMesh = Mesh::LoadFromMeshFile("Tree.msh");
-	Shader* newShader = new Shader("SceneVertex.glsl", "SceneFragment.glsl");
+	Shader* newShader = new Shader("TexturedVertex.glsl", "TexturedFragment.glsl");
 	shader.emplace_back(newShader);
 
 	if (!myMesh)
 		return false;
 
-	SceneNode* tree = new SceneNode(myMesh, Vector4(1, 0, 0, 1));
+	SceneNode* tree = new SceneNode(myMesh, Vector4(0, 0, 0, 1));
 	tree->SetShader(newShader);
+
+	MeshMaterial* material = new MeshMaterial("Tree.mat");
+	std::vector<GLuint> textures(myMesh->GetSubMeshCount());
+
+	for (int i = 0; i < myMesh->GetSubMeshCount(); ++i) {
+		const MeshMaterialEntry* matEntry = material->GetMaterialForLayer(i);
+		const string* filename = nullptr;
+		matEntry->GetEntry("Diffuse", &filename);
+		string path = TEXTUREDIR + *filename;
+
+		GLuint texID = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_AUTO,
+			SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y);
+
+		textures[i] = texID; 
+	}
+
+	tree->GetMaterial()->AddProperty("Diffuse", textures);
+	delete material;
+
+
+	//GetMaterial()->AddProperty("transparency", 0.8f);
 	tree->SetTransform(Matrix4::Translation(Vector3(mapSize.x * 0.5f, 165, mapSize.x * 0.5f)));
 	tree->SetModelScale(Vector3(25, 25, 25));
 

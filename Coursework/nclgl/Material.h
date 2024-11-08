@@ -16,7 +16,7 @@ public:
 
     enum WorldValue { CameraPosition, DeltaTime, CubeMap, LightRender, FarPlane, DepthTexture, ProjMatrix, ViewMatrix, Dimensions
     };
-    using PropertyValue = std::variant<Vector4, GLuint, Vector3, Matrix4, int, std::string, WorldValue, float>;
+    using PropertyValue = std::variant<Vector4, GLuint, Vector3, Matrix4, int, std::string, WorldValue, float, std::vector<GLuint>>;
 
     void SetShader(Shader* shader) { this->shader = shader; }
     Shader* GetShader() const { return shader; }
@@ -32,6 +32,7 @@ public:
             else if constexpr (std::is_same_v<T, float>) return "float";
             else if constexpr (std::is_same_v<T, std::string>) return "string";
             else if constexpr (std::is_same_v<T, Material::WorldValue>) return "worldValue";
+            else if constexpr (std::is_same_v<T, std::vector<GLuint>>) return "textureArray";
             else return "unknown";
             }, value);
     }
