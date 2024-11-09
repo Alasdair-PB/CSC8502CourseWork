@@ -2,6 +2,9 @@
 #include "../nclgl/Camera.h"
 #include "Terrain.h"
 #include "Water.h"
+#include "Leaves.h"
+#include "Trunk.h"
+
 #include "../nclgl/Light.h"
 #include "../nclgl/Material.h"
 #include "../nclgl/MeshMaterial.h"
@@ -16,21 +19,27 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	root = new SceneNode();
 
-	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root)) //
-		return; // Will throw errors as deleting shaders that have not been assigned on ~Renderer
+	// Testing sphere for now, but may just use as the sun idk
+	/*SceneNode* nodesphere = new SceneNode(sphere, Vector4(1, 1, 1, 1));
+	Shader* shady = new Shader("SceneVertex.glsl", "SceneFragment.glsl");
+	shader.emplace_back(shady);
+	nodesphere->SetShader(shady);
+	root->AddChild(nodesphere);*/
 
-	// Map size setup in SetTerrain
+	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root)) //
+		return;
+
 	light = new Light(mapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 0.8f, 0.5f, 1), mapSize.x * 0.5f);
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	camera = new Camera(-45.0f, 0.0f, mapSize * Vector3(0.5f, 5.0f, 0.5f));
 
 	this->dt = 0;
+
 	// Bind depth Buffer---------------------------------------------------------------------------------
 	glGenFramebuffers(1, &depthFBO);
 	glGenTextures(1, &depthTex);
 
 	glBindTexture(GL_TEXTURE_2D, depthTex);
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -53,16 +62,14 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 			150.0f,
 			rand() % (int)mapSize.z));
 
-		l.SetColour(Vector4(0.5f + (float)(rand() / (float)RAND_MAX),
-			0.5f + (float)(rand() / (float)RAND_MAX),
-			0.5f + (float)(rand() / (float)RAND_MAX),
-			1));
-		l.SetRadius(250.0f + (rand() % 250));
+		l.SetColour(Vector4(1,1,1,1));
+		l.SetRadius(1000.0f + (rand() % 250));
 	}
 
 	sceneShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl"); // reused
 	pointlightShader = new Shader("pointlightvertex.glsl", "pointlightfrag.glsl");
 	combineShader = new Shader("combinevert.glsl", "combinefrag.glsl");
+
 
 	if (!sceneShader->LoadSuccess() || !pointlightShader->LoadSuccess() || !combineShader->LoadSuccess()) 
 		return;
@@ -80,7 +87,7 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	GenerateScreenTexture(lightSpecularTex);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, bufferColourTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferNormalTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
 	glDrawBuffers(2, buffers);
@@ -89,8 +96,8 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 		return;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, lightDiffuseTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,GL_TEXTURE_2D, lightSpecularTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lightDiffuseTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, lightSpecularTex, 0);
 	glDrawBuffers(2, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) 
@@ -103,6 +110,8 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
+
+
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
@@ -166,6 +175,8 @@ void Renderer::UpdateScene(float dt)
 	this->dt += dt;
 	camera->UpdateCamera(dt);
 	viewMatrix = camera->BuildViewMatrix();
+	//`modelMatrix.ToIdentity();
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	root->Update(dt);
 
 }
@@ -176,38 +187,35 @@ void Renderer::RenderScene()
 
 	BuildNodeLists(root);
 	SortNodeLists();
+
+
+	// Write to depth buffer------------------------------------------
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	DrawOpaque();
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	// ------------------------------------------------------------------
 	DrawSkybox();
 
-	// Write to depth texture------------------------------------------
-    glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
-	glClear(GL_DEPTH_BUFFER_BIT);
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); 
-    DrawOpaque();
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	// ------------------------------------------------------------------
-
-	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
-	DrawNodes();
-	UpdateShaderMatrices();
-	glBindFramebuffer(GL_FRAMEBUFFER, 0); 
-
+	// Write to deferred textures-----------------------------------
+	/*glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	modelMatrix.ToIdentity();
-	//viewMatrix = camera->BuildViewMatrix();
-	//projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
-
-
+	viewMatrix = camera->BuildViewMatrix();
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+	UpdateShaderMatrices();
+	DrawOpaque();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);*/
+	// End Write to deferred textures--------------------------------
 	//DrawPointLights();
-   //CombineBuffers();	
+	//CombineBuffers();
 
-	//DrawTransparent();
-	//UpdateShaderMatrices();
+
 	DrawNodes();
-
-
 	ClearNodeLists();
-
-
 }
 
 
@@ -395,7 +403,6 @@ void Renderer::DrawTransparent()
 
 void Renderer::DrawNodes() 
 {
-
 	DrawOpaque();
 	DrawTransparent();
 }
@@ -415,20 +422,22 @@ bool Renderer::SetTerrain(SceneNode* root)
 	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	GLuint* newBumpTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
-	if (!newTexture || !newBumpTexture)
+	if (!newTexture || !newBumpTexture) 
 		return false;
 
 	SetTextureRepeating(*newTexture, true);
 	SetTextureRepeating(*newBumpTexture, true);
 
-	Shader* newTerrainShader = new Shader("bumpvertex.glsl", "bumpfragment.glsl");
+	Shader* newTerrainShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl"); 
 
 	texture.push_back(newTexture);
 	textureBump.push_back(newBumpTexture);
 	shader.emplace_back(newTerrainShader);
 
-	if (!newTerrainShader->LoadSuccess())
+	if (!newTerrainShader->LoadSuccess()) {
+		std::cout << "Failed setting parameters for Shader ID: " << newTerrainShader << std::endl;
 		return false;
+	}
 
 	Terrain* terrain = new Terrain(*newTexture, *newBumpTexture);
 	terrain->SetShader(newTerrainShader);
@@ -444,104 +453,40 @@ bool Renderer::SetTerrain(SceneNode* root)
 
 bool Renderer::SetTree(SceneNode* root)
 {
-	Mesh* myMesh = Mesh::LoadFromMeshFile("Leaves.msh");
-	Shader* newShader = new Shader("TexturedVertex.glsl", "TexturedFragment.glsl", "Geometry.glsl");
+	Shader* newShader = new Shader("TexturedVertex.glsl", "TexturedFragment.glsl" , "WiggleGeometry.glsl");
+	Shader* newTrunkShader = new Shader("TexturedVertex.glsl", "TexturedFragment.glsl" , "IcicleGeometry.glsl");
+
+	shader.emplace_back(newTrunkShader);
 	shader.emplace_back(newShader);
 
-	if (!myMesh)
-		return false;
+	SceneNode* leaves = new Leaves(mapSize.x);
+	SceneNode* trunk = new Trunk(mapSize.x);
 
-	SceneNode* tree = new SceneNode(myMesh, Vector4(0, 0, 0, 1));
-	tree->SetShader(newShader);
-
-	MeshMaterial* material = new MeshMaterial("Leaves.mat");
-	std::vector<GLuint> textures(myMesh->GetSubMeshCount());
-
-	for (int i = 0; i < myMesh->GetSubMeshCount(); ++i) {
-		const MeshMaterialEntry* matEntry = material->GetMaterialForLayer(i);
-		const string* filename = nullptr;
-		matEntry->GetEntry("Diffuse", &filename);
-		string path = TEXTUREDIR + *filename;
-
-		GLuint texID = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_AUTO,
-			SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y);
-
-		textures[i] = texID; 
-	}
-
-	tree->GetMaterial()->AddProperty("Diffuse", textures);
-	tree->GetMaterial()->AddProperty("dt", Material::DeltaTime);
-	tree->GetMaterial()->AddProperty("cameraPosition", Material::CameraPosition);
-
-	tree->GetMaterial()->AddProperty("faceCullOff", Material::DualFace);
-
-	tree->GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
-	tree->GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
-
-	delete material;
-
-	tree->SetTransform(Matrix4::Translation(Vector3(mapSize.x * 0.5f, 165, mapSize.x * 0.5f)));
-	tree->SetModelScale(Vector3(25, 25, 25));
-
-
-
-
-	Mesh* myTrunkMesh = Mesh::LoadFromMeshFile("Trunk.msh");
-	Shader* newTrunkShader = new Shader("TexturedVertex.glsl", "TexturedFragment.glsl");
-	shader.emplace_back(newTrunkShader);
-
-	if (!myTrunkMesh)
-		return false;
-
-	SceneNode* trunk = new SceneNode(myTrunkMesh, Vector4(0, 0, 0, 1));
 	trunk->SetShader(newTrunkShader);
+	leaves->SetShader(newShader);
 
-	MeshMaterial* materialTrunk = new MeshMaterial("Trunk.mat");
-	std::vector<GLuint> texturesTrunk(myTrunkMesh->GetSubMeshCount());
-
-	for (int i = 0; i < myTrunkMesh->GetSubMeshCount(); ++i) {
-		const MeshMaterialEntry* matEntry = materialTrunk->GetMaterialForLayer(i);
-		const string* filename = nullptr;
-		matEntry->GetEntry("Diffuse", &filename);
-		string path = TEXTUREDIR + *filename;
-
-		GLuint texID = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_AUTO,
-			SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y);
-
-		texturesTrunk[i] = texID;
-	}
-
-	trunk->GetMaterial()->AddProperty("Diffuse", texturesTrunk);
-	trunk->GetMaterial()->AddProperty("dt", Material::DeltaTime);
-
-	delete materialTrunk;
-
-	trunk->SetTransform(Matrix4::Translation(Vector3(mapSize.x * 0.5f, 165, mapSize.x * 0.5f)));
-	trunk->SetModelScale(Vector3(25, 25, 25));
-
-
-
-
-
-	root->AddChild(tree);
+	root->AddChild(leaves);
 	root->AddChild(trunk);
-
 	return true;
 }
 
 bool Renderer::SetWater(SceneNode* root)
 {
 	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "water.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0));
-	Shader* waterShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl"); 
+	GLuint* newBumpTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "waterbump.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+
+	Shader* waterShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl", "", "TesselationQuadControl", "TesselationQuadEvaluation");
 	SetTextureRepeating(*newTexture, true);
+	SetTextureRepeating(*newBumpTexture, true);
 
 	if (!waterShader->LoadSuccess())
 		return false;
 
 	texture.push_back(newTexture);
+	texture.push_back(newBumpTexture);
 	shader.emplace_back(waterShader);
 
-	Water* water = new Water(*newTexture, mapSize.x);
+	Water* water = new Water(*newTexture, *newBumpTexture, mapSize.x);
 	water->SetShader(waterShader);
 
 	root->AddChild(water);
@@ -560,8 +505,10 @@ bool Renderer::SetCubeMap()
 		TEXTUREDIR "rusted_south.jpg", TEXTUREDIR "rusted_north.jpg",
 		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
-	if (!cubeMap)
+	if (!cubeMap) {
 		return false;
+	}
+
 	return true;
 }
 
@@ -587,22 +534,19 @@ void Renderer::CombineBuffers() {
 	skyQuad->Draw();
 }
 
-
 void Renderer::GenerateScreenTexture(GLuint& into, bool depth) {
 	glGenTextures(1, &into);
 	glBindTexture(GL_TEXTURE_2D, into);
 
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	GLuint format = depth ? GL_DEPTH_COMPONENT24 : GL_RGBA8;
 	GLuint type = depth ? GL_DEPTH_COMPONENT : GL_RGBA;
 
-	glTexImage2D(GL_TEXTURE_2D, 0,
-		format, width, height, 0, type, GL_UNSIGNED_BYTE, NULL);
-
+	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, type, GL_UNSIGNED_BYTE, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -629,9 +573,9 @@ void Renderer::DrawPointLights() {
 	glUniform3fv(glGetUniformLocation(pointlightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 	glUniform2f(glGetUniformLocation(pointlightShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
 
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	Matrix4 invViewProj = (projMatrix * viewMatrix).Inverse();
-	glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "inverseProjView"),
-		1, false, invViewProj.values);
+	glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "inverseProjView"), 1, false, invViewProj.values);
 
 	UpdateShaderMatrices();
 

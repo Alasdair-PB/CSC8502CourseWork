@@ -62,8 +62,6 @@ protected:
 	vector<SceneNode*> transparentNodeList;
 	vector<SceneNode*> nodeList;
 
-
-
 	Shader* sceneShader; // Shader to fill our GBuffers
 	Shader* pointlightShader; // Shader to calculate lighting
 	Shader* combineShader; // Shader to combine buffers

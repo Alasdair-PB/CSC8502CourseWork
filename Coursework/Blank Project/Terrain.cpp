@@ -7,14 +7,10 @@ Terrain::Terrain(GLuint texture, GLuint textureBump)
 	mapSize = heightMap->GetHeightmapSize();
 
 	SetMesh(heightMap);
-	SetColour(Vector4(0, 0, 0, 1.1f));
+	SetColour(Vector4(0, 0, 0, 1)); // Not transparent
 
 	GetMaterial()->AddProperty("diffuseTex", texture);
 	GetMaterial()->AddProperty("bumpTex", textureBump);
-	GetMaterial()->AddProperty("lighting", Material::LightRender);
-	GetMaterial()->AddProperty("cameraPos", Material::CameraPosition);
-
-
 	SetBoundingRadius(15.0f);
 }
 

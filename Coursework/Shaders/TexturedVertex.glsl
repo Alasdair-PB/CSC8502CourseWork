@@ -8,20 +8,26 @@ in vec3 position;
 in vec4 colour;
 in vec2 texCoord;
 in vec3 normal;
-
-
-uniform float fresnel = 1.5;
+in vec4 tangent;
 
 out Vertex {
-	vec4 colour;
-	vec2 texCoord;
-	vec3 normal;
-} OUT ;
+    vec4 colour;
+    vec2 texCoord;
+    vec3 normal;
+    vec3 tangent;
+    vec3 binormal;
+    vec3 worldPos;
+} OUT;
 
-void main (void) {
-	mat4 mvp = projMatrix * viewMatrix * modelMatrix;
-	gl_Position = mvp * vec4 ( position, 1.0);
-	OUT.texCoord = ( textureMatrix * vec4 ( texCoord, 0.0, 1.0)).xy;
+void main (void) 
+{
+    vec4 worldPos = modelMatrix * vec4(position, 1.0);
+
+    OUT.texCoord = (textureMatrix * vec4(texCoord, 0.0, 1.0)).xy;
+    OUT.normal = normalize(mat3(modelMatrix) * normal);  
+    OUT.tangent = normalize(mat3(modelMatrix) * tangent.xyz);  
+    OUT.binormal = cross(OUT.normal, OUT.tangent); 
+    OUT.worldPos = worldPos.xyz;
+
+    gl_Position = projMatrix * viewMatrix * worldPos;
 }
-
-

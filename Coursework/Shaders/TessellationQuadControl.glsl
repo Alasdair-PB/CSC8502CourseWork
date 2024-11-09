@@ -17,13 +17,12 @@ patch out vec4 subColour;
 
 void main(){
 	gl_TessLevelInner[0] = tessLevelInner;
-	gl_TessLevelInner [1] = tessLevelInner; // Iff quad
+	gl_TessLevelInner[1] = tessLevelInner; 
 
 	gl_TessLevelOuter[0] = tessLevelOuter;
 	gl_TessLevelOuter[1] = tessLevelOuter;
 	gl_TessLevelOuter[2] = tessLevelOuter;
-	gl_TessLevelOuter [3] = tessLevelOuter; // Iff quad
-
+	gl_TessLevelOuter[3] = tessLevelOuter; 
 
 	//barrier ();
 	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;

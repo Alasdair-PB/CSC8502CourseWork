@@ -1,6 +1,8 @@
 #version 330 core
 
 uniform sampler2D diffuseTex;
+uniform sampler2D bumpTex;
+
 uniform sampler2D depthTex; 
 uniform samplerCube cubeTex;
 
@@ -12,7 +14,6 @@ uniform mat4 viewMatrix;
 uniform float transparency;
 uniform float foamCutoff;
 uniform float foamSpeed;
-
 
 uniform vec2 dimensions;
 
@@ -26,13 +27,15 @@ vec3 depthToWorldPos(vec2 uv, float depth)
 
 in Vertex 
 {
-    vec4 colour;
-    vec2 texCoord;
-    vec3 normal;
-    vec3 worldPos;
+	vec4 colour;
+	vec2 texCoord;
+	vec3 normal;
+	vec3 tangent;
+	vec3 binormal;
+	vec3 worldPos;
 } IN;
 
-out vec4 fragColour;
+out vec4[2] fragColour; 
 
 void main(void) 
 {
@@ -50,14 +53,23 @@ void main(void)
     vec3 fragmentWorldPos = depthToWorldPos(uv, fragmentDepth);
 
     float depthDiff = length(fragmentWorldPos - sceneWorldPos);
-
-
     
     if (depthDiff >= 5.0) {  
-        fragColour = (reflectTex * 0.5) + (diffuse * 0.5);
+        fragColour[0] = texture(diffuseTex, IN.texCoord);
+        fragColour[0] = (reflectTex * 0.5) + (diffuse * 0.5);
     } else {
-        fragColour = vec4(1.0, 1.0, 1.0, 1.0); 
+         fragColour[0]  = vec4(1.0, 1.0, 1.0, 1.0); 
     }
 
-    fragColour.w = transparency;
+    fragColour[0].w = transparency;
+
+    mat3 TBN = mat3(normalize(IN.tangent),
+                normalize(IN.binormal),
+                normalize(IN.normal));
+
+    vec3 normal = texture(bumpTex, IN.texCoord).rgb * 2.0 - 1.0;
+    normal = normalize(TBN * normal);
+
+  
+    fragColour[1] = vec4(normal * 0.5 + 0.5, 1.0);
 }

@@ -1,6 +1,7 @@
 #include "Water.h"
 
-Water::Water(GLuint texture, float hSize)
+Water::Water(GLuint texture, GLuint bumpTex, float hSize)
+	
 {
 	quad = Mesh::GenerateQuad();
 	SetMesh(quad);
@@ -9,6 +10,8 @@ Water::Water(GLuint texture, float hSize)
 	SetColour(Vector4(0, 0, 1, 0.5f));
 
 	GetMaterial()->AddProperty("diffuseTex", texture);
+	GetMaterial()->AddProperty("bumpTex", bumpTex);
+
 	GetMaterial()->AddProperty("transparency", 0.8f);
 
 	GetMaterial()->AddProperty("foamCutoff", 0.4f);
@@ -16,6 +19,8 @@ Water::Water(GLuint texture, float hSize)
 	GetMaterial()->AddProperty("scrollSpeed", 0.01f);	
 	GetMaterial()->AddProperty("waterScale", 15.0f);
 
+	//GetMaterial()->AddProperty("tessLevelInner", 10);
+	//GetMaterial()->AddProperty("tessLevelOuter", 10);
 
 	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
 	GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
