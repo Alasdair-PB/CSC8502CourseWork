@@ -181,15 +181,8 @@ void Renderer::UpdateScene(float dt)
 
 }
 
-void Renderer::RenderScene() 
+void Renderer::DepthBufferWrite() 
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	BuildNodeLists(root);
-	SortNodeLists();
-
-
-	// Write to depth buffer------------------------------------------
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
 	glClear(GL_DEPTH_BUFFER_BIT);
@@ -197,24 +190,31 @@ void Renderer::RenderScene()
 	DrawOpaque();
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	// ------------------------------------------------------------------
-	DrawSkybox();
+}
 
-	// Write to deferred textures-----------------------------------
-	/*glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+
+void Renderer::DeferredBufferWrite() 
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	modelMatrix.ToIdentity();
-	viewMatrix = camera->BuildViewMatrix();
-	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	UpdateShaderMatrices();
-	DrawOpaque();
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);*/
-	// End Write to deferred textures--------------------------------
-	//DrawPointLights();
-	//CombineBuffers();
-
-
 	DrawNodes();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::RenderScene() 
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	BuildNodeLists(root);
+	SortNodeLists();
+
+	DepthBufferWrite();
+	DeferredBufferWrite();
+
+	DrawSkybox();
+	DrawPointLights();
+	CombineBuffers();
 	ClearNodeLists();
 }
 

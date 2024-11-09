@@ -31,7 +31,8 @@ protected:
 	void DrawTransparent();
 	void CombineBuffers();
 	bool SetCubeMap();
-
+	void DepthBufferWrite();
+	void DeferredBufferWrite();
 	void DrawPointLights();
 	void DrawNodeReflective();
 	void GenerateScreenTexture(GLuint& into, bool depth = false);
