@@ -18,13 +18,14 @@ Water::Water(GLuint texture, GLuint bumpTex, float hSize)
 	GetMaterial()->AddProperty("foamSpeed", 4.0f);
 	GetMaterial()->AddProperty("scrollSpeed", 0.01f);	
 	GetMaterial()->AddProperty("waterScale", 15.0f);
-	
+
 	GetMaterial()->AddProperty("tessBuffer", Material::TesselationBuffer);
 	//GetMaterial()->AddProperty("tessLevelInner", 0.0f); // Without tess shader will break everything!!!
 	//GetMaterial()->AddProperty("tessLevelOuter", 0.0f);
 	GetMaterial()->AddProperty("dimensions", Material::Dimensions);
-
+	GetMaterial()->AddProperty("temperature", Material::Temperature);
 	GetMaterial()->AddProperty("dt", Material::DeltaTime);
+
 	GetMaterial()->AddProperty("cameraPos", Material::CameraPosition);
 	GetMaterial()->AddProperty("cubeMap", Material::CubeMap);
 	GetMaterial()->AddProperty("depthTex", Material::DepthTexture);

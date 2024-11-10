@@ -11,6 +11,8 @@ uniform vec3 cameraPos;
 uniform mat4 projMatrix;
 uniform mat4 viewMatrix;
 
+uniform float temperature;
+
 uniform float transparency;
 uniform float foamCutoff;
 uniform float foamSpeed;

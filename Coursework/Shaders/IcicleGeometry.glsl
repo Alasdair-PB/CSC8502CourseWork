@@ -2,7 +2,11 @@
 
 uniform sampler2D icicleMask;  
 uniform float iceHeight; 
-//uniform float temperature;
+uniform float temperature;
+
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 projMatrix;
 
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
@@ -31,28 +35,37 @@ out Vertex {
 void main() {
     for (int i = 0; i < gl_in.length(); i++) 
     {
-        vec4 pos = gl_in[i].gl_Position;
+
+
+        vec4 worldPos = vec4(IN[i].worldPos.xyz,1);
         vec3 normal = IN[i].normal;
-        vec3 worldPos = IN[i].worldPos;
         OUT.iceShading = 0;
 
-        if (normal.y < 0.0) {
-            float mask = texture(icicleMask, IN[i].texCoord).r;
+        if (temperature < 0)
+        {
+            if (normal.y < 0.0) {
+                float mask = texture(icicleMask, IN[i].texCoord).r;
 
-            if (mask > 0.45)
-            {
-                float displacement = iceHeight * mask;
-                pos.y -= displacement;
-                 OUT.iceShading = 1;
-            } 
+                if (mask > 0.45)
+                {
+                    float maxBoundary = -10;
+                    float minBoundary = 10;
+                    float tempMult = clamp((maxBoundary - abs(temperature)) / (maxBoundary - minBoundary), 0.0, 1.0);
+                    float displacement = iceHeight * mask * tempMult;
+;
+                    worldPos.y -= displacement;
+                    OUT.iceShading = 1;
+                } 
+            }
         }
 
-        gl_Position = pos;
+        gl_Position = projMatrix * viewMatrix *  worldPos;
+
 
         OUT.colour = IN[i].colour;
         OUT.texCoord = IN[i].texCoord;
         OUT.normal = IN[i].normal;
-        OUT.worldPos = worldPos;
+        //OUT.worldPos = IN[i].worldPos;
         
         EmitVertex();
     }

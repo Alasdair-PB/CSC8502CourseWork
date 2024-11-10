@@ -19,7 +19,7 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	root = new SceneNode();
 
-
+	temperature = -10.0f;
 
 	float inner[] = {1.0f ,2.0f};
 	float outer[] = { 4.0f ,4.0f ,2.0f ,2.0f };
@@ -46,6 +46,7 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	camera = new Camera(-45.0f, 0.0f, mapSize * Vector3(0.5f, 5.0f, 0.5f));
 
 	this->dt = 0;
+	this->dtSeason = 0;
 
 	// Tesselation support---------------------------------------------------------------------------------
 
@@ -195,13 +196,28 @@ Renderer::~Renderer(void)
 
 void Renderer::UpdateScene(float dt) 
 {	
-	this->dt += dt;
+	UpdateTemperature(dt);
 	camera->UpdateCamera(dt);
+
 	viewMatrix = camera->BuildViewMatrix();
-	//`modelMatrix.ToIdentity();
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	root->Update(dt);
+}
 
+void Renderer::UpdateTemperature(float dt) 
+{
+	this->dt += dt;
+	this->dtSeason += dt;
+	float nextTemperature = this->temperature;
+
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_1))
+		nextTemperature += 0.3f;
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_2))
+		nextTemperature -= 0.3f;
+
+	if ((nextTemperature < 0 && temperature > 0) || (nextTemperature > 0 && temperature < 0))
+		this->dtSeason = 0;
+	this->temperature = nextTemperature;
 }
 
 void Renderer::DepthBufferWrite() 
@@ -336,8 +352,14 @@ void Renderer::DrawNode(SceneNode* n) {
 								case Material::ViewMatrix:
 									glUniformMatrix4fv(location, 1, false, (float*)&camera->BuildViewMatrix());
 									break;
+								case Material::Temperature:
+									glUniform1f(location, temperature);
+									break;
 								case Material::DeltaTime:
 									glUniform1f(location, this->dt);
+									break;
+								case Material::DeltaTimeSeason:
+									glUniform1f(location, this->dtSeason);
 									break;
 								case Material::Dimensions:
 									glUniform2fv(location,1, (float*)&( Vector2(width, height)));

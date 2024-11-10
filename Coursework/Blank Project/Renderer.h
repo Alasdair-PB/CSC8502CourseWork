@@ -23,7 +23,7 @@ protected:
 	bool SetTerrain(SceneNode* root);
 	bool SetWater(SceneNode* root);
 	bool SetTree(SceneNode* root);
-
+	void UpdateTemperature(float dt);
 	void DrawSkybox();
 	void DrawNodes();
 	void DrawNode(SceneNode* n);
@@ -40,8 +40,10 @@ protected:
 	SceneNode* root;
 	Camera* camera;	
 	Light* light;
-	float dt;
 
+	float dt;
+	float dtSeason;
+	float temperature;
 
 	Shader* skyboxShader;
 

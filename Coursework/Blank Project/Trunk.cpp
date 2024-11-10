@@ -7,6 +7,7 @@ Trunk::Trunk(float hSize, GLuint icicleMask)
 	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
 	GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
 	GetMaterial()->AddProperty("cameraPosition", Material::CameraPosition);
+	GetMaterial()->AddProperty("temperature", Material::Temperature);
 
 	GetMaterial()->AddProperty("iceHeight", 50.0f);
 	//GetMaterial()->AddProperty("temperature", 0.5f);
