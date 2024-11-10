@@ -26,6 +26,7 @@ out Vertex {
     vec3 tangent;
     vec3 binormal;
     vec3 worldPos;
+    float iceShading;
 
 } OUT;
 
@@ -36,17 +37,23 @@ void main()
     vec3 lastWorldPos;
     for (int i = 0; i < gl_in.length(); i++) 
     {
-        vec2 worldPos = vec2(i, i);
+
         vec4 pos = gl_in[i].gl_Position;
 
         float offsetX = sin(dt * wiggleFrequency + pos.x) * wiggleIntensity;
         float offsetY = cos(dt * wiggleFrequency + pos.y) * wiggleIntensity;
+ 
+        pos.y -= 10 * abs(IN[i].normal.x) * dt;
+        pos.x += 5 * IN[i].normal.y * dt;
 
         gl_Position = pos + vec4(offsetX, offsetY, 0.0, 0.0);
+
+
 
         OUT.colour = IN[i].colour;
         OUT.texCoord = IN[i].texCoord;
         OUT.normal = IN[i].normal;
+        OUT.iceShading = 0;
         EmitVertex();
     }
     EndPrimitive();

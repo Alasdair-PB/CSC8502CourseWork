@@ -24,7 +24,11 @@ class MshObject : public SceneNode
 					SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y);
 				textures[i] = texID;
 			}
-			GetMaterial()->AddProperty("Diffuse", textures);
+
+			if (textures.size() > 1)
+				GetMaterial()->AddProperty("Diffuse", textures);
+			else 
+				GetMaterial()->AddProperty("Diffuse", textures[0]);
 
 			delete material;
 

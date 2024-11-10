@@ -1,6 +1,7 @@
 #version 330 core
 
 uniform sampler2D diffuseTex;  
+uniform sampler2D icicleMask;  
 uniform vec3 cameraPos;   
 
 in Vertex {
@@ -10,6 +11,7 @@ in Vertex {
     vec3 tangent;
     vec3 binormal;
     vec3 worldPos;
+    float iceShading;
 } IN;
 
 out vec4[2] fragColour; 
@@ -21,8 +23,11 @@ void main(void)
     float fresnel = pow(1.0 - cosTheta, 5.0);  
 
     vec4 diffuse = texture(diffuseTex, IN.texCoord);  
+
+    diffuse.rgb *= 1.5;
     vec4 rimColor = vec4(fresnel, fresnel, fresnel, 1.0); 
 
-    fragColour[0] = mix(diffuse, rimColor, 0.5f); 
-    fragColour[1] = vec4(0.5,0.5,0.5,1);
+    diffuse.z += IN.iceShading;
+    fragColour[0] = diffuse; // + IN.colour;// +  (1-diffuse) * rimColor; 
+    fragColour[1] = vec4(1);
 }

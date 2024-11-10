@@ -41,6 +41,7 @@ void main(void)
 {
     vec4 diffuse = texture(diffuseTex, IN.texCoord); 
     vec3 viewDir = normalize(cameraPos - IN.worldPos); 
+
     vec3 reflectDir = reflect(-viewDir, normalize(IN.normal)); 
     vec4 reflectTex = texture(cubeTex, reflectDir); 
 
@@ -54,22 +55,25 @@ void main(void)
 
     float depthDiff = length(fragmentWorldPos - sceneWorldPos);
     
-    if (depthDiff >= 5.0) {  
-        fragColour[0] = texture(diffuseTex, IN.texCoord);
+    vec3 normal;
+    if (depthDiff >= 5.0) 
+    {  
         fragColour[0] = (reflectTex * 0.5) + (diffuse * 0.5);
-    } else {
-         fragColour[0]  = vec4(1.0, 1.0, 1.0, 1.0); 
+
+        mat3 TBN = mat3(normalize(IN.tangent), normalize(IN.binormal), normalize(IN.normal));
+        normal = texture(bumpTex, IN.texCoord).rgb * 2.0 - 0.5;
+        normal = normalize(TBN * normal);
+
+        normal += vec3(1,1,1);
+
+    } else 
+    {
+         fragColour[0]  = vec4(1.0, 1.0, 1.0, 1.0);     
+         normal = vec3(1,1,1);
     }
 
+           
+
     fragColour[0].w = transparency;
-
-    mat3 TBN = mat3(normalize(IN.tangent),
-                normalize(IN.binormal),
-                normalize(IN.normal));
-
-    vec3 normal = texture(bumpTex, IN.texCoord).rgb * 2.0 - 1.0;
-    normal = normalize(TBN * normal);
-
-  
     fragColour[1] = vec4(normal * 0.5 + 0.5, 1.0);
 }

@@ -19,6 +19,18 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	root = new SceneNode();
 
+
+
+	float inner[] = {1.0f ,2.0f};
+	float outer[] = { 4.0f ,4.0f ,2.0f ,2.0f };
+
+	//GLint patchverts = 0;
+	//glGetIntegerv(GL_MAX_PATCH_VERTICES, &patchverts);
+	glPatchParameteri(GL_PATCH_VERTICES, 4);
+
+	glPatchParameterfv(GL_PATCH_DEFAULT_INNER_LEVEL, inner);
+	glPatchParameterfv(GL_PATCH_DEFAULT_OUTER_LEVEL, outer);
+
 	// Testing sphere for now, but may just use as the sun idk
 	/*SceneNode* nodesphere = new SceneNode(sphere, Vector4(1, 1, 1, 1));
 	Shader* shady = new Shader("SceneVertex.glsl", "SceneFragment.glsl");
@@ -34,6 +46,14 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	camera = new Camera(-45.0f, 0.0f, mapSize * Vector3(0.5f, 5.0f, 0.5f));
 
 	this->dt = 0;
+
+	// Tesselation support---------------------------------------------------------------------------------
+
+	GLint patchverts = 3;
+	glEnable(GL_TESS_CONTROL_SHADER);
+	glEnable(GL_TESS_EVALUATION_SHADER);
+	glGetIntegerv(GL_MAX_PATCH_VERTICES, &patchverts);
+	glPatchParameteri(GL_PATCH_VERTICES, 4);
 
 	// Bind depth Buffer---------------------------------------------------------------------------------
 	glGenFramebuffers(1, &depthFBO);
@@ -62,8 +82,11 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 			150.0f,
 			rand() % (int)mapSize.z));
 
-		l.SetColour(Vector4(1,1,1,1));
-		l.SetRadius(1000.0f + (rand() % 250));
+		l.SetColour(Vector4(0.5f + (float)(rand() / (float)RAND_MAX),
+			0.5f + (float)(rand() / (float)RAND_MAX),
+			0.5f + (float)(rand() / (float)RAND_MAX),
+			1));
+		l.SetRadius(1500.0f + (rand() % 250));
 	}
 
 	sceneShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl"); // reused
@@ -282,7 +305,7 @@ void Renderer::DrawNode(SceneNode* n) {
 									glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
 									glActiveTexture(GL_TEXTURE0);
 									glBindTexture(GL_TEXTURE_2D, val[i]);
-									//myMesh->DrawSubMesh(i);
+									myMesh->DrawSubMesh(i);
 								}
 							}
 							else if constexpr (std::is_same_v<T, Material::WorldValue>) 
@@ -303,7 +326,13 @@ void Renderer::DrawNode(SceneNode* n) {
 								case Material::ProjMatrix:
 									glUniformMatrix4fv(location, 1, false, (float*)&this->projMatrix);
 									break;
+								case Material::TesselationBuffer:
+									//glDrawArrays(GL_PATCHES, 0, 3);  
+									//glDrawArrays(GL_PATCHES, 0, 3);
+									//glDrawElements(GL_PATCHES, 3, GL_UNSIGNED_INT, 0);
 
+									glPatchParameteri(GL_PATCH_VERTICES, 3);
+									break;
 								case Material::ViewMatrix:
 									glUniformMatrix4fv(location, 1, false, (float*)&camera->BuildViewMatrix());
 									break;
@@ -335,6 +364,7 @@ void Renderer::DrawNode(SceneNode* n) {
 				}
 			}
 		}
+		// No longer used
 		if (renderFlag) {
 
 			SetShaderLight(*light);
@@ -455,12 +485,16 @@ bool Renderer::SetTree(SceneNode* root)
 {
 	Shader* newShader = new Shader("TexturedVertex.glsl", "TexturedFragment.glsl" , "WiggleGeometry.glsl");
 	Shader* newTrunkShader = new Shader("TexturedVertex.glsl", "TexturedFragment.glsl" , "IcicleGeometry.glsl");
+	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "IceOffset.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	
+	SetTextureRepeating(*newTexture, true);
 
+	texture.push_back(newTexture);
 	shader.emplace_back(newTrunkShader);
 	shader.emplace_back(newShader);
 
 	SceneNode* leaves = new Leaves(mapSize.x);
-	SceneNode* trunk = new Trunk(mapSize.x);
+	SceneNode* trunk = new Trunk(mapSize.x, *newTexture);
 
 	trunk->SetShader(newTrunkShader);
 	leaves->SetShader(newShader);
@@ -474,8 +508,8 @@ bool Renderer::SetWater(SceneNode* root)
 {
 	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "water.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0));
 	GLuint* newBumpTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "waterbump.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	Shader* waterShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl", "PasserGeometry.glsl"); // , "TessellationControl.glsl", "TessellationEvaluation.glsl");
 
-	Shader* waterShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl", "", "TesselationQuadControl", "TesselationQuadEvaluation");
 	SetTextureRepeating(*newTexture, true);
 	SetTextureRepeating(*newBumpTexture, true);
 

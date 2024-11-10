@@ -14,11 +14,9 @@ in Vertex {
 
 out vec4 fragColour[2]; // Our final outputted colours!
 
-void main(void) {
-    mat3 TBN = mat3(normalize(IN.tangent),
-                    normalize(IN.binormal),
-                    normalize(IN.normal));
-
+void main(void)
+{
+    mat3 TBN = mat3(normalize(IN.tangent), normalize(IN.binormal), normalize(IN.normal));
     vec3 normal = texture(bumpTex, IN.texCoord).rgb * 2.0 - 1.0;
     normal = normalize(TBN * normal);
 

@@ -4,7 +4,7 @@
 
 class Trunk : public MshObject {
 public:
-	Trunk(float hSize);
+	Trunk(float hSize, GLuint icicleMask);
 
 	~Trunk(void) {
 
