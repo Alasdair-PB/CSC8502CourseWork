@@ -2,8 +2,8 @@
 
 layout(vertices=3) out;
 
-uniform float tessLevelInner;
-uniform float tessLevelOuter;
+uniform float tessLevelInner = 3;
+uniform float tessLevelOuter = 4;
 
 in Vertex{
 	vec4 colour;

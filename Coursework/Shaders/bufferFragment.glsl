@@ -1,6 +1,7 @@
 #version 330 core
 
 uniform sampler2D diffuseTex; // Diffuse texture map
+uniform sampler2D diffuseTexB; // Bump map
 uniform sampler2D bumpTex;    // Bump map
 
 in Vertex {

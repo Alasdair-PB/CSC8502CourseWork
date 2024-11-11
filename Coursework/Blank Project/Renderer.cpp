@@ -21,16 +21,6 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 
 	temperature = -10.0f;
 
-	float inner[] = {1.0f ,2.0f};
-	float outer[] = { 4.0f ,4.0f ,2.0f ,2.0f };
-
-	//GLint patchverts = 0;
-	//glGetIntegerv(GL_MAX_PATCH_VERTICES, &patchverts);
-	glPatchParameteri(GL_PATCH_VERTICES, 4);
-
-	glPatchParameterfv(GL_PATCH_DEFAULT_INNER_LEVEL, inner);
-	glPatchParameterfv(GL_PATCH_DEFAULT_OUTER_LEVEL, outer);
-
 	// Testing sphere for now, but may just use as the sun idk
 	/*SceneNode* nodesphere = new SceneNode(sphere, Vector4(1, 1, 1, 1));
 	Shader* shady = new Shader("SceneVertex.glsl", "SceneFragment.glsl");
@@ -47,14 +37,6 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 
 	this->dt = 0;
 	this->dtSeason = 0;
-
-	// Tesselation support---------------------------------------------------------------------------------
-
-	GLint patchverts = 3;
-	glEnable(GL_TESS_CONTROL_SHADER);
-	glEnable(GL_TESS_EVALUATION_SHADER);
-	glGetIntegerv(GL_MAX_PATCH_VERTICES, &patchverts);
-	glPatchParameteri(GL_PATCH_VERTICES, 4);
 
 	// Bind depth Buffer---------------------------------------------------------------------------------
 	glGenFramebuffers(1, &depthFBO);
@@ -253,7 +235,10 @@ void Renderer::RenderScene()
 
 	DrawSkybox();
 	DrawPointLights();
+
 	CombineBuffers();
+	UpdateShaderMatrices();
+
 	ClearNodeLists();
 }
 
@@ -272,8 +257,10 @@ void Renderer::DrawNode(SceneNode* n) {
 		glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
 
 		Material* material = n->GetMaterial();
+
 		bool renderFlag = false;
 		bool faceCulling = true;
+		bool tessFalg = false;
 
 		if (material) 
 		{
@@ -342,12 +329,13 @@ void Renderer::DrawNode(SceneNode* n) {
 								case Material::ProjMatrix:
 									glUniformMatrix4fv(location, 1, false, (float*)&this->projMatrix);
 									break;
-								case Material::TesselationBuffer:
-									//glDrawArrays(GL_PATCHES, 0, 3);  
-									//glDrawArrays(GL_PATCHES, 0, 3);
-									//glDrawElements(GL_PATCHES, 3, GL_UNSIGNED_INT, 0);
-
+								case Material::TessQuad:
+									glPatchParameteri(GL_PATCH_VERTICES, 4);
+									tessFalg = true;
+									break;
+								case Material::TessTri:
 									glPatchParameteri(GL_PATCH_VERTICES, 3);
+									tessFalg = true;
 									break;
 								case Material::ViewMatrix:
 									glUniformMatrix4fv(location, 1, false, (float*)&camera->BuildViewMatrix());
@@ -396,7 +384,10 @@ void Renderer::DrawNode(SceneNode* n) {
 		if (faceCulling == false)
 			glDisable(GL_CULL_FACE);
 
-		n->Draw(*this);
+		if (tessFalg)
+			n->Draw(*this, GL_PATCHES);
+		else
+			n->Draw(*this);
 
 		if (faceCulling == false)
 			glEnable(GL_CULL_FACE);
@@ -501,12 +492,10 @@ bool Renderer::SetTerrain(SceneNode* root)
 }
 
 
-
-
 bool Renderer::SetTree(SceneNode* root)
 {
 	Shader* newShader = new Shader("TexturedVertex.glsl", "TexturedFragment.glsl" , "WiggleGeometry.glsl");
-	Shader* newTrunkShader = new Shader("TexturedVertex.glsl", "TexturedFragment.glsl" , "IcicleGeometry.glsl");
+	Shader* newTrunkShader = new Shader("icicleVertex.glsl", "icicleFragment.glsl", "", "icicleTessControl.glsl", "icicleTessEvaluation.glsl");
 	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "IceOffset.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	
 	SetTextureRepeating(*newTexture, true);
@@ -530,7 +519,8 @@ bool Renderer::SetWater(SceneNode* root)
 {
 	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "water.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0));
 	GLuint* newBumpTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "waterbump.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	Shader* waterShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl", "PasserGeometry.glsl"); // , "TessellationControl.glsl", "TessellationEvaluation.glsl");
+	Shader* waterShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl", "", "TessellationQuadControl.glsl", "waterTessEvaluation.glsl");
+	//Shader* waterShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl", "", "TessellationControl.glsl", "TessellationEvaluation.glsl");
 
 	SetTextureRepeating(*newTexture, true);
 	SetTextureRepeating(*newBumpTexture, true);
@@ -648,3 +638,4 @@ void Renderer::DrawPointLights() {
 	glClearColor(0.2f, 0.2f, 0.2f, 1);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
+

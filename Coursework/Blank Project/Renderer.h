@@ -44,19 +44,32 @@ protected:
 	float dt;
 	float dtSeason;
 	float temperature;
+	const GLint patchverts = 4;
 
 	Shader* skyboxShader;
-
 	Shader* currentShader;
+	Shader* sceneShader;
+	Shader* pointlightShader;
+	Shader* combineShader;
+
+	GLuint cubeMap;
 	GLuint currentTexture;
 	GLuint currentBumpMap;
+
 	GLuint depthFBO;
 	GLuint depthTex;
 
-	Mesh* skyQuad;
-	Mesh* sphere; // Light volume
+	GLuint bufferFBO; 
+	GLuint bufferColourTex; 
+	GLuint bufferNormalTex; 
+	GLuint bufferDepthTex; 
 
-	GLuint cubeMap;
+	GLuint pointLightFBO;
+	GLuint lightDiffuseTex;
+	GLuint lightSpecularTex; 
+
+	Mesh* skyQuad;
+	Mesh* sphere; 
 
 	vector<Shader*> shader;
 	vector<GLuint*> texture;
@@ -65,21 +78,7 @@ protected:
 	vector<SceneNode*> transparentNodeList;
 	vector<SceneNode*> nodeList;
 
-	Shader* sceneShader; // Shader to fill our GBuffers
-	Shader* pointlightShader; // Shader to calculate lighting
-	Shader* combineShader; // Shader to combine buffers
-
-	GLuint bufferFBO; // FBO for our G-Buffer pass
-	GLuint bufferColourTex; // Albedo texture
-	GLuint bufferNormalTex; // Normals texture
-	GLuint bufferDepthTex; // Depth texture
-
-	GLuint pointLightFBO; // FBO for lighting pass
-	GLuint lightDiffuseTex; // Store diffuse lighting
-	GLuint lightSpecularTex; // Store specular lighting
-	Light* pointLights; // Array of lighting data
-
-
+	Light* pointLights; 
 	Vector3 mapSize;
 
 };

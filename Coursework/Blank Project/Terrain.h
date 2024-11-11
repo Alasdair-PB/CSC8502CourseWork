@@ -13,4 +13,5 @@ class Terrain : public SceneNode
 	protected:
 		SceneNode* ground;
 		Vector3 mapSize;
+		GLuint CreateTextureAtlas(const std::vector<GLuint>& textures, int singleTextureWidth, int singleTextureHeight, int atlasCols);
 };

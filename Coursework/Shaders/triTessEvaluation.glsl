@@ -38,7 +38,7 @@ void main()
     OUT.normal = normalize(IN[0].normal); 
     OUT.tangent = normalize(IN[0].tangent);
     OUT.binormal = normalize(IN[0].binormal);
-    OUT.worldPos = IN[0].worldPos.xyz;
+    OUT.worldPos = worldPos.xyz; // IN[0].worldPos.xyz;
 
 	gl_Position = projMatrix * viewMatrix * worldPos;
 }

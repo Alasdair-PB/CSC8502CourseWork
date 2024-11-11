@@ -52,7 +52,7 @@ public:
 	Mesh(void);
 	~Mesh(void);
 
-	void Draw();
+	void Draw(GLuint type = NULL);
 	void DrawSubMesh(int i);
 
 	static Mesh* LoadFromMeshFile(const std::string& name);
@@ -79,12 +79,11 @@ public:
 		return inverseBindPose;
 	}
 
-	int		GetSubMeshCount() const {
+	int	GetSubMeshCount() const {
 		return (int)meshLayers.size();
 	}
 
 	bool GetSubMesh(int i, const SubMesh* s) const;
-
 	bool GetSubMesh(const std::string& name, const SubMesh* s) const;
 
 protected:

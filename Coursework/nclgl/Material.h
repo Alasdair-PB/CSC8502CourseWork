@@ -15,7 +15,7 @@ public:
     }
 
     enum WorldValue { CameraPosition, DeltaTimeSeason, DeltaTime, Temperature, CubeMap, 
-        TesselationBuffer, LightRender, FarPlane, DualFace, DepthTexture, ProjMatrix, ViewMatrix, Dimensions
+        TessQuad, TessTri, LightRender, FarPlane, DualFace, DepthTexture, ProjMatrix, ViewMatrix, Dimensions
     };
     using PropertyValue = std::variant<Vector4, GLuint, Vector3, Matrix4, int, std::string, WorldValue, float, std::vector<GLuint>>;
 

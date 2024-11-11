@@ -39,16 +39,19 @@ Mesh::~Mesh(void) {
 	delete[]	weightIndices;
 }
 
-void Mesh::Draw() {
+void Mesh::Draw(GLuint type) {
+
+	if (type == NULL)
+		type = this->type;
+
 	glBindVertexArray(arrayObject);
-	if (bufferObject[INDEX_BUFFER]) {
+	if (bufferObject[INDEX_BUFFER]) 
 		glDrawElements(type, numIndices, GL_UNSIGNED_INT, 0);
-	}
-	else {
+	else 
 		glDrawArrays(type, 0, numVertices);
-	}
 	glBindVertexArray(0);
 }
+
 
 void Mesh::DrawSubMesh(int i) {
 	if (i < 0 || i >= (int)meshLayers.size()) {
@@ -94,7 +97,7 @@ Mesh* Mesh::GenerateTriangle() {
 Mesh* Mesh::GenerateQuad() {
 	Mesh* m = new Mesh();
 	m->numVertices = 4;
-	m->type = GL_TRIANGLE_STRIP;
+	m->type = GL_TRIANGLE_STRIP; //GL_PATCHES; //
 
 	m->vertices = new Vector3[m->numVertices];
 	m->textureCoords = new Vector2[m->numVertices];
@@ -108,15 +111,16 @@ Mesh* Mesh::GenerateQuad() {
 	m->textureCoords[1] = Vector2(0.0f, 0.0f);
 	m->textureCoords[2] = Vector2(1.0f, 1.0f);
 	m->textureCoords[3] = Vector2(1.0f, 0.0f);
-	m->normals = new Vector3[m->numVertices]; // Init new var !
-	m->tangents = new Vector4[m->numVertices]; // Init new var !
+
+	m->normals = new Vector3[m->numVertices]; 
+	m->tangents = new Vector4[m->numVertices]; 
 
 	for (int i = 0; i < 4; ++i) {
 		m->colours[i] = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-		m->normals[i] = Vector3(0.0f, 0.0f, -1.0f); // New !
-		m->tangents[i] = Vector4(1.0f, 0.0f, 0.0f, 1.0f); // New !
-
+		m->normals[i] = Vector3(0.0f, 0.0f, -1.0f);
+		m->tangents[i] = Vector4(1.0f, 0.0f, 0.0f, 1.0f); 
 	}
+
 	m->BufferData();
 	return m;
 }

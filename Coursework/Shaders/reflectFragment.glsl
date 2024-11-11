@@ -34,7 +34,7 @@ in Vertex
 	vec3 normal;
 	vec3 tangent;
 	vec3 binormal;
-	vec3 worldPos;
+	vec4 worldPos;
 } IN;
 
 out vec4[2] fragColour; 
@@ -42,7 +42,7 @@ out vec4[2] fragColour;
 void main(void) 
 {
     vec4 diffuse = texture(diffuseTex, IN.texCoord); 
-    vec3 viewDir = normalize(cameraPos - IN.worldPos); 
+    vec3 viewDir = normalize(cameraPos - IN.worldPos.xyz); 
 
     vec3 reflectDir = reflect(-viewDir, normalize(IN.normal)); 
     vec4 reflectTex = texture(cubeTex, reflectDir); 

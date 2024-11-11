@@ -28,10 +28,10 @@ void SceneNode::AddChild(SceneNode* s)
 }
 
 
-void SceneNode::Draw(const OGLRenderer& r)
+void SceneNode::Draw(const OGLRenderer& r, GLuint type)
 {
 	if (mesh)
-		mesh->Draw();
+		mesh->Draw(type);
 }
 
 void SceneNode::Update(float dt)

@@ -19,12 +19,7 @@ out Vertex {
 
 void main(void) 
 {
-
-    float waterCycle = dt * scrollSpeed; 
-    vec2 scrolledTexCoord = texCoord + vec2(waterCycle, waterCycle);
-    vec2 scaledTexCoord = scrolledTexCoord * waterScale;
-
-    OUT.texCoord = scaledTexCoord;
+    OUT.texCoord = texCoord;
 	OUT.colour = colour;
 	gl_Position = vec4(position, 1.0); 
 }
