@@ -44,7 +44,8 @@ float randomSeed(vec3 pos) {
 
 void main() 
 {
-    vec3 lastWorldPos;
+    vec3 leafCenter = (IN[0].worldPos + IN[1].worldPos + IN[2].worldPos) / 3.0;
+
     for (int i = 0; i < gl_in.length(); i++) 
     {
         float leafSeed = randomSeed(IN[i].worldPos.xyz);
@@ -52,20 +53,23 @@ void main()
 
         float offsetX = sin(dt * wiggleFrequency + worldPos.x) * wiggleIntensity;
         float offsetY = cos(dt * wiggleFrequency + worldPos.y) * wiggleIntensity;
+
          worldPos += vec4(offsetX, offsetY, 0.0, 0.0);        
         
-        if (temperature < 0)
+        if (dtSeason < 10 && temperature >= 0)
         {
-            worldPos.y -= 50 * abs(IN[i].normal.x) * dtSeason;
-            worldPos.x += 25 * IN[i].normal.y * dtSeason;
-        } else if (dtSeason < 10)
+            float scaleFactor = dtSeason;   
+            worldPos.xyz = leafCenter + (worldPos.xyz - leafCenter) * (0.1 * dtSeason);
+        }
+        else if (temperature < 0 && dtSeason >= 10)
         {
-        // Can still use dt to work out if this is second time -> scale then offset
-            float scaleFactor = dtSeason; 
-            worldPos = vec4(worldPos.xyz * scaleFactor, 1);
+            worldPos.y -= 50 * abs(IN[i].normal.x) * (dtSeason - 10);
+            worldPos.x += 25 * IN[i].normal.y * (dtSeason - 10);
         }
 
+
         gl_Position = projMatrix * viewMatrix *  worldPos;
+
 
         OUT.colour = IN[i].colour;
         OUT.texCoord = IN[i].texCoord;
