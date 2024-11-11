@@ -14,31 +14,81 @@
 const int LIGHT_NUM = 32;
 
 
-Renderer::Renderer(Window &parent) : OGLRenderer(parent)	
+Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 {
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	root = new SceneNode();
 
-	temperature = -10.0f;
-
-	// Testing sphere for now, but may just use as the sun idk
-	/*SceneNode* nodesphere = new SceneNode(sphere, Vector4(1, 1, 1, 1));
-	Shader* shady = new Shader("SceneVertex.glsl", "SceneFragment.glsl");
-	shader.emplace_back(shady);
-	nodesphere->SetShader(shady);
-	root->AddChild(nodesphere);*/
 
 	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root)) //
 		return;
 
-	light = new Light(mapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 0.8f, 0.5f, 1), mapSize.x * 0.5f);
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	camera = new Camera(-45.0f, 0.0f, mapSize * Vector3(0.5f, 5.0f, 0.5f));
-
+	this->temperature = -10.0f;
 	this->dt = 0;
 	this->dtSeason = 0;
 
-	// Bind depth Buffer---------------------------------------------------------------------------------
+	SetupDepthbuffer();
+	SetupFramebuffer();
+	SetLights();
+	SetupDeferredbuffer();
+
+	sceneShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl"); 
+	pointlightShader = new Shader("pointlightvertex.glsl", "pointlightfrag.glsl");
+	combineShader = new Shader("combinevert.glsl", "combinefrag.glsl");
+	postProcessShader = new Shader("", ""); // Add later!!
+
+	if (!sceneShader->LoadSuccess() || !pointlightShader->LoadSuccess() || !combineShader->LoadSuccess())
+		return;
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+
+	init = true;
+}
+
+void Renderer::SetupDeferredbuffer() 
+{
+	glGenFramebuffers(1, &bufferFBO);
+	glGenFramebuffers(1, &pointLightFBO);
+
+	GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+
+	GenerateScreenTexture(bufferDepthTex, true);
+	GenerateScreenTexture(bufferColourTex);
+	GenerateScreenTexture(bufferNormalTex);
+	GenerateScreenTexture(lightDiffuseTex);
+	GenerateScreenTexture(lightSpecularTex);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferNormalTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
+	glDrawBuffers(2, buffers);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		return;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lightDiffuseTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, lightSpecularTex, 0);
+	glDrawBuffers(2, buffers);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		return;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+}
+
+void Renderer::SetupDepthbuffer() 
+{
 	glGenFramebuffers(1, &depthFBO);
 	glGenTextures(1, &depthTex);
 
@@ -53,11 +103,12 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 	glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
-	// End bind depth buffer---------------------------------------------------------------------------------
-
-	// Shadow Mapping-------------------------------------------------------------------------------------
+void Renderer::SetLights() 
+{
 	pointLights = new Light[LIGHT_NUM];
+	light = new Light(mapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 0.8f, 0.5f, 1), mapSize.x * 0.5f);
 
 	for (int i = 0; i < LIGHT_NUM; ++i) {
 		Light& l = pointLights[i];
@@ -71,59 +122,23 @@ Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 			1));
 		l.SetRadius(1500.0f + (rand() % 250));
 	}
-
-	sceneShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl"); // reused
-	pointlightShader = new Shader("pointlightvertex.glsl", "pointlightfrag.glsl");
-	combineShader = new Shader("combinevert.glsl", "combinefrag.glsl");
-
-
-	if (!sceneShader->LoadSuccess() || !pointlightShader->LoadSuccess() || !combineShader->LoadSuccess()) 
-		return;
-
-	glGenFramebuffers(1, &bufferFBO);
-	glGenFramebuffers(1, &pointLightFBO);
-
-	GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-
-	// Generate our scene depth texture
-	GenerateScreenTexture(bufferDepthTex, true);
-	GenerateScreenTexture(bufferColourTex);
-	GenerateScreenTexture(bufferNormalTex); 
-	GenerateScreenTexture(lightDiffuseTex);
-	GenerateScreenTexture(lightSpecularTex);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferNormalTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
-	glDrawBuffers(2, buffers);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) 
-		return;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lightDiffuseTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, lightSpecularTex, 0);
-	glDrawBuffers(2, buffers);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) 
-		return;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glEnable(GL_CULL_FACE);
-	//End shadow mapping-----------------------------------------------------------------------
-
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-
-
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-
-
-	init = true;
 }
+
+void Renderer::SetupFramebuffer() 
+{
+	glGenFramebuffers(1, &postPFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, postPFBO);
+
+	glGenTextures(1, &postPTex);
+	glBindTexture(GL_TEXTURE_2D, postPTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, postPTex, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 
 Renderer::~Renderer(void)	
 {
@@ -154,11 +169,14 @@ Renderer::~Renderer(void)
 	glDeleteTextures(1, &currentTexture);	
 	glDeleteTextures(1, &depthTex);
 	glDeleteTextures(1, &depthFBO);
+	glDeleteTextures(1, &postPFBO);
+	glDeleteTextures(1, &postPTex);
 
 
 	// Shadow mapping ----------------------------------------------------------
 	delete sceneShader;
 	delete combineShader;
+	delete postProcessShader;
 	delete pointlightShader;
 	delete sphere;
 	delete[] pointLights;
@@ -558,7 +576,9 @@ bool Renderer::SetCubeMap()
 	return true;
 }
 
-void Renderer::CombineBuffers() {
+void Renderer::CombineBuffers() 
+{
+	// Bind to PP shader!
 	BindShader(combineShader);
 	modelMatrix.ToIdentity();
 	viewMatrix.ToIdentity();
@@ -577,6 +597,15 @@ void Renderer::CombineBuffers() {
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);
 
+	skyQuad->Draw();
+}
+
+void Renderer::PostProcess() 
+{
+	BindShader(postProcessShader);
+	glUniform1i(glGetUniformLocation(postProcessShader->GetProgram(), "sceneTex"), 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, postPTex);
 	skyQuad->Draw();
 }
 

@@ -36,6 +36,14 @@ protected:
 	void DrawPointLights();
 	void DrawNodeReflective();
 	void GenerateScreenTexture(GLuint& into, bool depth = false);
+	void PostProcess();
+	void SetLights();
+
+	void SetupFramebuffer();
+	void SetupDepthbuffer();
+	void SetupDeferredbuffer();
+
+
 
 	SceneNode* root;
 	Camera* camera;	
@@ -51,6 +59,7 @@ protected:
 	Shader* sceneShader;
 	Shader* pointlightShader;
 	Shader* combineShader;
+	Shader* postProcessShader;
 
 	GLuint cubeMap;
 	GLuint currentTexture;
@@ -58,6 +67,9 @@ protected:
 
 	GLuint depthFBO;
 	GLuint depthTex;
+
+	GLuint postPFBO;         
+	GLuint postPTex;
 
 	GLuint bufferFBO; 
 	GLuint bufferColourTex; 
