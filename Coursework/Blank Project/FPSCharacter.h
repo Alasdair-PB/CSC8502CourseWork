@@ -13,7 +13,7 @@ public:
 		delete anim;
 	};
 
-	void Update(float dt) override;
+	void Update(float dt, Vector3 cameraPos) override;
 
 protected:
 	Mesh* fpsCharater;

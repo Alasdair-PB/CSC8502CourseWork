@@ -1,7 +1,7 @@
 #version 330 core
 
-uniform sampler2D diffuseTex; 
-//uniform sampler2D bumpTex;  
+uniform sampler2D diffuseTex;  
+uniform sampler2D iceTex;  
 
 in Vertex {
     vec4 colour;
@@ -10,17 +10,23 @@ in Vertex {
     vec3 tangent;
     vec3 binormal;
     vec4 worldPos;
-    bool isFrozen;
+    float isFrozen;
 } IN;
 
 out vec4 fragColour[2]; 
 
 void main(void)
 {
-    mat3 TBN = mat3(normalize(IN.tangent), normalize(IN.binormal), normalize(IN.normal));
-    //vec3 normal = texture(bumpTex, IN.texCoord).rgb * 2.0 - 1.0;
-    //normal = normalize(TBN * normal);
+    vec4 diffuse;
 
-    fragColour[0] = texture(diffuseTex, IN.texCoord);
-    fragColour[1] = vec4(1);//vec4(normal * 0.5 + 0.5, 1.0);
+    if (IN.isFrozen > 0){
+        //diffuse = texture(iceTex, IN.texCoord);  
+        diffuse.xyz = vec3(0,0,1); 
+    } else{
+        diffuse = texture(diffuseTex, IN.texCoord);  
+    }
+       
+    diffuse.a = 1;
+    fragColour[0] = diffuse; 
+    fragColour[1] = vec4(1);
 }

@@ -9,10 +9,9 @@ SceneNode::SceneNode(Mesh* mesh, Vector4 colour) {
 	distanceFromCamera = 0.0f;
 	texture = 0;
 	modelScale = Vector3(1, 1, 1);
-
 }
 
-SceneNode ::~SceneNode(void)
+SceneNode::~SceneNode(void)
 {
 	for (unsigned int i = 0; i < children.size(); ++i) {
 		delete children[i];
@@ -34,7 +33,7 @@ void SceneNode::Draw(const OGLRenderer& r, GLuint type)
 		mesh->Draw(type);
 }
 
-void SceneNode::Update(float dt)
+void SceneNode::Update(float dt, Vector3 cameraPos) 
 {
 
 	if (parent)
@@ -43,7 +42,7 @@ void SceneNode::Update(float dt)
 		worldTransform = transform;
 
 	for (vector <SceneNode*>::iterator i = children.begin(); i != children.end(); ++i) {
-		(*i)->Update(dt);
+		(*i)->Update(dt, cameraPos);
 	}
 }
 

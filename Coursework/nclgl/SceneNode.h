@@ -37,7 +37,7 @@ public:
 
 	void AddChild(SceneNode* s);
 
-	virtual void Update(float dt);
+	virtual void Update(float dt, Vector3 cameraPos);
 	virtual void Draw(const OGLRenderer& r, GLuint type = NULL);
 
 	std::vector < SceneNode* >::const_iterator GetChildIteratorStart() {

@@ -23,6 +23,8 @@ Leaves::Leaves(float hSize)
 }
 
 
-void Leaves::Update(float dt) {
-	SceneNode::Update(dt);
+
+void Leaves::Update(float dt, Vector3 cameraPos)
+{
+	SceneNode::Update(dt, cameraPos);
 }

@@ -29,11 +29,11 @@ public:
 	float GetYaw() const { return yaw; }
 	void SetYaw(float y) { yaw = y; }
 
-	float GetFarPlane() const { return farPlane; }
-	void SetFarPlane(float val) { farPlane = val; }
-
 	float GetPitch() const { return pitch; }
 	void SetPitch(float p) { pitch = p; }
+
+	float GetFarPlane() const { return farPlane; }
+	void SetFarPlane(float val) { farPlane = val; }
 
 
 protected:
@@ -41,5 +41,5 @@ protected:
 	float pitch;
 	float nearPlane; 
 	float farPlane;
-	Vector3 position; // Set to 0 ,0 ,0 by Vector3 constructor ;)
+	Vector3 position; 
 };

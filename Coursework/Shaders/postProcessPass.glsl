@@ -26,6 +26,7 @@ void main(void)
 		fragColour += tmp * scaleFactors[i];
 	}*/
 
-	fragColour.xyz = diffuse; 
+	fragColour.xyz = diffuse;
+	fragColour.a = 1;
 	fragColour.a = (fragColour.r + fragColour.g + fragColour.b <= 0.075) ? 0.0 : 1.0;
 }

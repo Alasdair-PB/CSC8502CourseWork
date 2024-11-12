@@ -140,6 +140,9 @@ void Renderer::SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFal
 		case Material::ProjMatrix:
 			glUniformMatrix4fv(location, 1, false, (float*)&this->projMatrix);
 			break;
+		case Material::ViewMatrix:
+			glUniformMatrix4fv(location, 1, false, (float*)&camera->BuildViewMatrix());
+			break;
 		case Material::TessQuad:
 			glPatchParameteri(GL_PATCH_VERTICES, 4);
 			*tessFalg = true;
@@ -147,9 +150,6 @@ void Renderer::SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFal
 		case Material::TessTri:
 			glPatchParameteri(GL_PATCH_VERTICES, 3);
 			*tessFalg = true;
-			break;
-		case Material::ViewMatrix:
-			glUniformMatrix4fv(location, 1, false, (float*)&camera->BuildViewMatrix());
 			break;
 		case Material::Temperature:
 			glUniform1f(location, temperature);

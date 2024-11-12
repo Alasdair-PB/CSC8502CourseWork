@@ -4,16 +4,17 @@
 #include <algorithm>
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent)
-{
+{	
+	
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	root = new SceneNode();
 
 
-	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root) || !SetFPSCharacter(root)) //
-		return;
-
-	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root)) 
+		return;	
 	camera = new Camera(-45.0f, 0.0f, mapSize * Vector3(0.5f, 5.0f, 0.5f));
+	SetFPSCharacter(root);
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	this->temperature = -10.0f;
 	this->dt = 0;
 	this->dtSeason = 0;
@@ -42,10 +43,10 @@ void Renderer::UpdateScene(float dt)
 	UpdateFrameTime(dt);
 	UpdateTemperature(dt);
 	camera->UpdateCamera(dt);
-
+	UpdateRunner();
 	viewMatrix = camera->BuildViewMatrix();
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
-	root->Update(dt);
+	root->Update(dt, camera->GetPosition());
 }
 
 void Renderer::UpdateTemperature(float dt) 
@@ -62,6 +63,19 @@ void Renderer::UpdateTemperature(float dt)
 	if ((nextTemperature < 0 && temperature > 0) || (nextTemperature > 0 && temperature < 0))
 		this->dtSeason = 0;
 	this->temperature = nextTemperature;
+}
+
+
+// Model is offcenter- so the calculation will be really annoying to do
+void Renderer::UpdateRunner() {
+
+	Vector3 cameraPos = camera->GetPosition();
+	float yaw = camera->GetYaw();
+	float pitch = camera->GetPitch();
+
+	runningGuy->SetTransform(
+		Matrix4::Translation(cameraPos) * Matrix4::Rotation(pitch, Vector3(1, 0, 0)) * Matrix4::Rotation(yaw + 180, Vector3(0, 1, 0))
+	);
 }
 
 void Renderer::UpdateFrameTime(float dt)

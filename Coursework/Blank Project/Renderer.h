@@ -29,6 +29,7 @@ protected:
 
 	void UpdateTemperature(float dt);
 	void UpdateFrameTime(float dt);
+	void UpdateRunner();
 
 	void SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFalg, Material::WorldValue val, GLint location);
 	void DepthBufferWrite();
@@ -56,6 +57,7 @@ protected:
 
 
 	SceneNode* root;
+	SceneNode* runningGuy;
 	Camera* camera;	
 	Light* light;
 

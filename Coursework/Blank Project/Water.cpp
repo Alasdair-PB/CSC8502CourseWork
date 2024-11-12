@@ -37,6 +37,8 @@ Water::Water(GLuint texture, GLuint bumpTex, float hSize)
 }
 
 
-void Water::Update(float dt) {
-	SceneNode::Update(dt);
+
+void Water::Update(float dt, Vector3 cameraPos)
+{
+	SceneNode::Update(dt, cameraPos);
 }

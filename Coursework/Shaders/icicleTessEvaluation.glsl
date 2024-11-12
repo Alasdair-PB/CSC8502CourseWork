@@ -1,17 +1,19 @@
 #version 400 core
 
 layout(triangles, equal_spacing, cw) in;
-
 uniform sampler2D icicleMask;
+
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projMatrix;
-uniform float iceHeight;
+
+uniform float iceHeight; 
 uniform float temperature;
 
 in Vertex {
     vec4 colour;
     vec2 texCoord;
+    vec3 normal;
 } IN[];
 
 out Vertex {
@@ -21,7 +23,7 @@ out Vertex {
     vec3 tangent;
     vec3 binormal;
     vec4 worldPos;
-    bool isFrozen;
+    float isFrozen;
 } OUT;
 
 vec3 TriMixVec3(vec3 a, vec3 b, vec3 c) {
@@ -41,7 +43,6 @@ void main() {
     OUT.texCoord = TriMixVec2(IN[0].texCoord, IN[1].texCoord, IN[2].texCoord);
     vec4 worldPos = modelMatrix * vec4(combinedPos, 1);
 
-
     vec3 edge1 = worldPos.xyz - gl_in[0].gl_Position.xyz;
     vec3 edge2 = gl_in[1].gl_Position.xyz - gl_in[0].gl_Position.xyz;
     OUT.normal = normalize(cross(edge1, edge2));
@@ -57,33 +58,9 @@ void main() {
     float r = 1.0 / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
     vec3 tangent = r * (deltaUV2.y * deltaPos1 - deltaUV1.y * deltaPos2);
 
+    OUT.isFrozen = 0;
     OUT.tangent = normalize(tangent);
     OUT.binormal = normalize(cross(OUT.normal, OUT.tangent));
     OUT.colour = IN[0].colour;
     OUT.worldPos = worldPos;
 }
-
-
-    /*vec3 edge1 = worldPos.xyz - gl_in[0].gl_Position.xyz;
-    vec3 edge2 = gl_in[1].gl_Position.xyz - gl_in[0].gl_Position.xyz;
-
-    OUT.normal = normalize(cross(edge1, edge2));
-
-    bool frozen = false;
-    if (temperature < 0)
-    {
-        if (OUT.normal.y < 0.0) {
-            float mask = texture(icicleMask, OUT.texCoord).r;
-
-            if (mask > 0.45)
-            {
-                float maxBoundary = -10;
-                float minBoundary = 10;
-                float tempMult = clamp((maxBoundary - abs(temperature)) / (maxBoundary - minBoundary), 0.0, 1.0);
-                float displacement = iceHeight * mask * tempMult;
-;
-                worldPos.y -= displacement;
-                frozen = true;
-            } 
-        }
-    }*/

@@ -48,6 +48,18 @@ bool Renderer::SetFPSCharacter(SceneNode* root)
 	Shader* newShader = new Shader("SkinningVertex.glsl", "fpsCharFragment.glsl");
 	SceneNode* fpsCharacter = new FpsCharacter(mapSize.x);
 	fpsCharacter->SetShader(newShader);
+	runningGuy = fpsCharacter;
+	Vector3 cameraPos = camera->GetPosition();
+	float yaw = camera->GetYaw();
+	float pitch = camera->GetPitch();
+
+	cameraPos.y -= 180;
+
+	fpsCharacter->SetTransform(
+		Matrix4::Translation(cameraPos) * Matrix4::Rotation(pitch, Vector3(1, 0, 0)) * Matrix4::Rotation(yaw + 180, Vector3(0, 1, 0))
+	);
+
+	runningGuy = fpsCharacter;
 	root->AddChild(fpsCharacter);
 	return true;
 }
@@ -55,8 +67,9 @@ bool Renderer::SetFPSCharacter(SceneNode* root)
 bool Renderer::SetTree(SceneNode* root)
 {
 	Shader* newShader = new Shader("TexturedVertex.glsl", "leafFragment.glsl", "WiggleGeometry.glsl");
-	Shader* newTrunkShader = new Shader("icicleVertex.glsl", "icicleFragment.glsl", "", "icicleTessControl.glsl", "icicleTessEvaluation.glsl");
+	Shader* newTrunkShader = new Shader("icicleVertex.glsl", "icicleFragment.glsl", "IcicleGeometry.glsl"); //, "icicleTessControl.glsl", "icicleTessEvaluation.glsl");
 	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "IceOffset.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	GLuint* newIceTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Ice_03_basecolor.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
 	SetTextureRepeating(*newTexture, true);
 
@@ -65,7 +78,7 @@ bool Renderer::SetTree(SceneNode* root)
 	shader.emplace_back(newShader);
 
 	SceneNode* leaves = new Leaves(mapSize.x);
-	SceneNode* trunk = new Trunk(mapSize.x, *newTexture);
+	SceneNode* trunk = new Trunk(mapSize.x, *newTexture, *newIceTexture);
 
 	trunk->SetShader(newTrunkShader);
 	leaves->SetShader(newShader);

@@ -14,8 +14,10 @@ Terrain::Terrain(GLuint texture, GLuint textureBump)
 	SetBoundingRadius(15.0f);
 }
 
-void Terrain::Update(float dt) {
-	SceneNode::Update(dt);
+
+void Terrain::Update(float dt, Vector3 cameraPos)
+{
+	SceneNode::Update(dt, cameraPos);
 }
 
 // May use may not- thinking about terrain layers for layered textures, but may be out of scope

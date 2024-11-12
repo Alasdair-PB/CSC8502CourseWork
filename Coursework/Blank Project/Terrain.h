@@ -6,7 +6,7 @@ class Terrain : public SceneNode
 	public:
 		Terrain(GLuint texture, GLuint textureBump);
 		~Terrain(void) {};
-		void Update(float dt) override;
+		void Update(float dt, Vector3 cameraPos) override;
 
 		Vector3 GetMapSize(){ return mapSize; }
 
