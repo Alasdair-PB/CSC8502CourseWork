@@ -70,6 +70,9 @@ protected:
 	float frameTime;
 	const GLint patchverts = 4;
 
+	Vector3 lastCameraPos;
+
+
 	Shader* skyboxShader;
 	Shader* currentShader;
 	Shader* sceneShader;

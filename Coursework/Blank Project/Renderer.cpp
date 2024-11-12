@@ -2,17 +2,23 @@
 #include "../nclgl/Camera.h"
 #include "../nclgl/Light.h"
 #include <algorithm>
+#include "../nclgl/Pathing.h"
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 {	
-	
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	root = new SceneNode();
 
-
 	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root)) 
 		return;	
-	camera = new Camera(-45.0f, 0.0f, mapSize * Vector3(0.5f, 5.0f, 0.5f));
+
+	Vector3 cameraPos = mapSize * Vector3(0.5f, 5.0f, 0.5f);
+	cameraPos.y = 250.0f;
+
+	camera = new Camera(-45.0f, 0.0f, cameraPos);
+	camera->GetPath()->SetPathPattern(cameraPos, Vector3(800,0,0), Vector3(-800,0,0), Vector3(0,0,500), 3);
+	lastCameraPos = cameraPos;
+
 	SetFPSCharacter(root);
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	this->temperature = -10.0f;
@@ -66,16 +72,30 @@ void Renderer::UpdateTemperature(float dt)
 }
 
 
-// Model is offcenter- so the calculation will be really annoying to do
-void Renderer::UpdateRunner() {
-
+void Renderer::UpdateRunner() 
+{
 	Vector3 cameraPos = camera->GetPosition();
-	float yaw = camera->GetYaw();
-	float pitch = camera->GetPitch();
+	Vector3 cameraToPlayer = cameraPos;
 
-	runningGuy->SetTransform(
-		Matrix4::Translation(cameraPos) * Matrix4::Rotation(pitch, Vector3(1, 0, 0)) * Matrix4::Rotation(yaw + 180, Vector3(0, 1, 0))
-	);
+	cameraToPlayer.y -= 150.0f;
+
+	float yaw = camera->GetYaw();
+
+	float offsetDistance = -25.0f;
+	cameraToPlayer.x += offsetDistance * std::sin(yaw * (PI / 180.0f));
+	cameraToPlayer.z += offsetDistance * std::cos(yaw * (PI / 180.0f));
+
+	Matrix4 nextPos = Matrix4::Translation(cameraToPlayer) *
+		Matrix4::Rotation(yaw, Vector3(0, 1, 0)) *
+		Matrix4::Rotation(180, Vector3(0, 1, 0));
+
+	Vector3 offsetMatrix = Vector3(0, -250.0f, 0);
+
+	if (lastCameraPos == cameraPos)
+		nextPos = nextPos * Matrix4::Translation(offsetMatrix);
+
+	lastCameraPos = cameraPos;
+	runningGuy->SetTransform(nextPos);
 }
 
 void Renderer::UpdateFrameTime(float dt)

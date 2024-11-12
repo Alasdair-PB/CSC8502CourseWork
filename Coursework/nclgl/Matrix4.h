@@ -28,6 +28,16 @@ public:
 	Matrix4(const float elements[16]);
 	~Matrix4(void);
 
+	inline bool operator==(const Matrix4& other) const {
+		for (int i = 0; i < 16; ++i) {
+			if (values[i] != other.values[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+
 	float	values[16];
 
 	//Set all matrix values to zero
