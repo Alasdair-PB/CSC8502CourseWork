@@ -20,8 +20,8 @@ void main(void)
     vec4 diffuse;
 
     if (IN.isFrozen > 0){
-        //diffuse = texture(iceTex, IN.texCoord);  
-        diffuse.xyz = vec3(0,0,1); 
+        diffuse = texture(iceTex, IN.texCoord);  
+        //diffuse.xyz = vec3(0,0,1); 
     } else{
         diffuse = texture(diffuseTex, IN.texCoord);  
     }

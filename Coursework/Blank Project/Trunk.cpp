@@ -2,9 +2,9 @@
 
 Trunk::Trunk(float hSize, GLuint icicleMask, GLuint iceTexture)
 {	
-	
+
 	GetMaterial()->AddProperty("icicleMask", icicleMask);
-	GetMaterial()->AddProperty("iceTex", iceTexture);
+	GetMaterial()->AddProperty("iceTex", iceTexture); // does not work as trunk is set to 0
 
 	SetFromSubMesh("Trunk");
 

@@ -38,10 +38,11 @@ void main() {
         if (temperature < 0) {
             if (IN[i].normal.y < 0.0) {                    
             
-                frozen += 1;
 
                 float mask = texture(icicleMask, IN[i].texCoord).r;
-                if (mask > 0.45) {
+                if (mask > 0.45) {                
+                    frozen = 1;
+
                     float maxBoundary = -10;
                     float minBoundary = 10;
                     float tempMult = clamp((maxBoundary - abs(temperature)) / (maxBoundary - minBoundary), 0.0, 1.0);
@@ -53,7 +54,7 @@ void main() {
 
         OUT.tangent = vec3(1); // Meant for tess shader, but having issues there
         OUT.binormal = vec3(1);
-        OUT.isFrozen = 0;
+        OUT.isFrozen = frozen;
         OUT.worldPos = worldPos;
         OUT.colour = IN[i].colour;
         OUT.texCoord = IN[i].texCoord;
