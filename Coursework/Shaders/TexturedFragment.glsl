@@ -8,10 +8,9 @@ in Vertex {
     vec4 colour;
     vec2 texCoord;
     vec3 normal;
-    vec3 tangent;
-    vec3 binormal;
-    vec3 worldPos;
-    float iceShading;
+    //vec3 tangent;
+    //vec3 binormal;
+    //vec3 worldPos;
 } IN;
 
 out vec4[2] fragColour; 
@@ -27,7 +26,6 @@ void main(void)
     diffuse.rgb *= 1.5;
     vec4 rimColor = vec4(fresnel, fresnel, fresnel, 1.0); 
 
-    diffuse.z += IN.iceShading;
     fragColour[0] = diffuse; // + IN.colour;// +  (1-diffuse) * rimColor; 
     fragColour[1] = vec4(1);
 }

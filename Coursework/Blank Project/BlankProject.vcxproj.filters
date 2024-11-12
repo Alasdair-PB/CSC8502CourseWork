@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="BlankProject.cpp" />
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="RendererAddObjects.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="RendererBufferSetUp.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="RendererDraw.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="FPSCharacter.cpp">
+      <Filter>WorldObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Leaves.cpp">
+      <Filter>WorldObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Terrain.cpp">
+      <Filter>WorldObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Trunk.cpp">
+      <Filter>WorldObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Water.cpp">
+      <Filter>WorldObjects</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MshObject.h" />
+    <ClInclude Include="Renderer.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="FPSCharacter.h">
+      <Filter>WorldObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="Leaves.h">
+      <Filter>WorldObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="Terrain.h">
+      <Filter>WorldObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="Trunk.h">
+      <Filter>WorldObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="Water.h">
+      <Filter>WorldObjects</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Renderer">
+      <UniqueIdentifier>{bd63fb2c-7914-436c-9a8c-c058520be8e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="WorldObjects">
+      <UniqueIdentifier>{2a029fe9-4135-4dc3-82c8-dd16c0bb7e6e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

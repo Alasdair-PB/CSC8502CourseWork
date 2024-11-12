@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
+#include "../nclgl/MeshAnimation.h"
+
 
 class Material
 {
@@ -17,7 +19,7 @@ public:
     enum WorldValue { CameraPosition, DeltaTimeSeason, DeltaTime, Temperature, CubeMap, 
         TessQuad, TessTri, LightRender, FarPlane, DualFace, DepthTexture, ProjMatrix, ViewMatrix, Dimensions
     };
-    using PropertyValue = std::variant<Vector4, GLuint, Vector3, Matrix4, int, std::string, WorldValue, float, std::vector<GLuint>>;
+    using PropertyValue = std::variant<Vector4, GLuint, Vector3, Matrix4, int, std::string, MeshAnimation*, WorldValue, float, std::vector<GLuint>>;
 
     void SetShader(Shader* shader) { this->shader = shader; }
     Shader* GetShader() const { return shader; }
@@ -34,6 +36,8 @@ public:
             else if constexpr (std::is_same_v<T, std::string>) return "string";
             else if constexpr (std::is_same_v<T, Material::WorldValue>) return "worldValue";
             else if constexpr (std::is_same_v<T, std::vector<GLuint>>) return "textureArray";
+            else if constexpr (std::is_same_v<T, MeshAnimation*>) return "meshAnimation";
+
             else return "unknown";
             }, value);
     }

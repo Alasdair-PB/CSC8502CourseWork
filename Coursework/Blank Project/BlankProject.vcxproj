@@ -138,13 +138,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BlankProject.cpp" />
+    <ClCompile Include="FPSCharacter.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="RendererAddObjects.cpp" />
+    <ClCompile Include="RendererBufferSetUp.cpp" />
+    <ClCompile Include="RendererDraw.cpp" />
     <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="Leaves.cpp" />
     <ClCompile Include="Trunk.cpp" />
     <ClCompile Include="Water.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FPSCharacter.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="MshObject.h" />
     <ClInclude Include="Terrain.h" />

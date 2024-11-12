@@ -14,6 +14,5 @@ public:
 	void Update(float dt) override;
 
 protected:
-	SceneNode* trunk;
 	Mesh* mesh;
 };

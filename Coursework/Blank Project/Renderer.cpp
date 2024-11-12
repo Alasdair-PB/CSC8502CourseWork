@@ -1,18 +1,7 @@
 #include "Renderer.h"
 #include "../nclgl/Camera.h"
-#include "Terrain.h"
-#include "Water.h"
-#include "Leaves.h"
-#include "Trunk.h"
-
 #include "../nclgl/Light.h"
-#include "../nclgl/Material.h"
-#include "../nclgl/MeshMaterial.h"
-
 #include <algorithm>
-
-const int LIGHT_NUM = 32;
-
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 {
@@ -20,7 +9,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	root = new SceneNode();
 
 
-	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root)) //
+	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root) || !SetFPSCharacter(root)) //
 		return;
 
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
@@ -28,6 +17,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	this->temperature = -10.0f;
 	this->dt = 0;
 	this->dtSeason = 0;
+	this->currentFrame = 0;
+	this->frameTime = 0.0f;
 
 	SetupDepthbuffer();
 	SetupFramebuffer();
@@ -37,165 +28,18 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	sceneShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl"); 
 	pointlightShader = new Shader("pointlightvertex.glsl", "pointlightfrag.glsl");
 	combineShader = new Shader("combinevert.glsl", "combinefrag.glsl");
-	postProcessShader = new Shader("", ""); // Add later!!
+	postProcessShader = new Shader("combinevert.glsl", "postProcessPass.glsl"); 
 
 	if (!sceneShader->LoadSuccess() || !pointlightShader->LoadSuccess() || !combineShader->LoadSuccess())
 		return;
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
 
-
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-
-
+	GLEnablers();
 	init = true;
 }
 
-void Renderer::SetupDeferredbuffer() 
-{
-	glGenFramebuffers(1, &bufferFBO);
-	glGenFramebuffers(1, &pointLightFBO);
-
-	GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-
-	GenerateScreenTexture(bufferDepthTex, true);
-	GenerateScreenTexture(bufferColourTex);
-	GenerateScreenTexture(bufferNormalTex);
-	GenerateScreenTexture(lightDiffuseTex);
-	GenerateScreenTexture(lightSpecularTex);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferNormalTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
-	glDrawBuffers(2, buffers);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		return;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lightDiffuseTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, lightSpecularTex, 0);
-	glDrawBuffers(2, buffers);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		return;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-}
-
-void Renderer::SetupDepthbuffer() 
-{
-	glGenFramebuffers(1, &depthFBO);
-	glGenTextures(1, &depthTex);
-
-	glBindTexture(GL_TEXTURE_2D, depthTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void Renderer::SetLights() 
-{
-	pointLights = new Light[LIGHT_NUM];
-	light = new Light(mapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 0.8f, 0.5f, 1), mapSize.x * 0.5f);
-
-	for (int i = 0; i < LIGHT_NUM; ++i) {
-		Light& l = pointLights[i];
-		l.SetPosition(Vector3(rand() % (int)mapSize.x,
-			150.0f,
-			rand() % (int)mapSize.z));
-
-		l.SetColour(Vector4(0.5f + (float)(rand() / (float)RAND_MAX),
-			0.5f + (float)(rand() / (float)RAND_MAX),
-			0.5f + (float)(rand() / (float)RAND_MAX),
-			1));
-		l.SetRadius(1500.0f + (rand() % 250));
-	}
-}
-
-void Renderer::SetupFramebuffer() 
-{
-	glGenFramebuffers(1, &postPFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, postPFBO);
-
-	glGenTextures(1, &postPTex);
-	glBindTexture(GL_TEXTURE_2D, postPTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, postPTex, 0);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-
-Renderer::~Renderer(void)	
-{
-	for (auto tex : texture) {
-		glDeleteTextures(1, tex);  
-		delete tex;                  
-	}
-	texture.clear(); 
-
-	for (auto bumpTex : textureBump) {
-		glDeleteTextures(1, bumpTex);  
-		delete bumpTex;                 
-	}
-	textureBump.clear(); 
-
-	for (auto shdr : shader) {
-		delete shdr; 
-	}
-	shader.clear();
-
-	delete camera;
-	delete skyQuad;
-
-	delete root;
-	delete skyboxShader;
-
-	glDeleteTextures(1, &currentBumpMap);
-	glDeleteTextures(1, &currentTexture);	
-	glDeleteTextures(1, &depthTex);
-	glDeleteTextures(1, &depthFBO);
-	glDeleteTextures(1, &postPFBO);
-	glDeleteTextures(1, &postPTex);
-
-
-	// Shadow mapping ----------------------------------------------------------
-	delete sceneShader;
-	delete combineShader;
-	delete postProcessShader;
-	delete pointlightShader;
-	delete sphere;
-	delete[] pointLights;
-
-	glDeleteTextures(1, &bufferColourTex);
-	glDeleteTextures(1, &bufferNormalTex);
-	glDeleteTextures(1, &bufferDepthTex);
-	glDeleteTextures(1, &lightDiffuseTex);
-	glDeleteTextures(1, &lightSpecularTex);
-
-	glDeleteFramebuffers(1, &bufferFBO);
-	glDeleteFramebuffers(1, &pointLightFBO);
-	// End Shadow mapping -------------------------------------------------------
-
-}
-
-
 void Renderer::UpdateScene(float dt) 
 {	
+	UpdateFrameTime(dt);
 	UpdateTemperature(dt);
 	camera->UpdateCamera(dt);
 
@@ -218,6 +62,11 @@ void Renderer::UpdateTemperature(float dt)
 	if ((nextTemperature < 0 && temperature > 0) || (nextTemperature > 0 && temperature < 0))
 		this->dtSeason = 0;
 	this->temperature = nextTemperature;
+}
+
+void Renderer::UpdateFrameTime(float dt)
+{
+	frameTime -= dt;
 }
 
 void Renderer::DepthBufferWrite() 
@@ -255,162 +104,9 @@ void Renderer::RenderScene()
 	DrawPointLights();
 
 	CombineBuffers();
-	UpdateShaderMatrices();
+	PostProcess();
 
 	ClearNodeLists();
-}
-
-
-void Renderer::DrawNode(SceneNode* n) {
-
-	if (n->GetMesh() && n->GetShader()) {
-		if (currentShader != n->GetShader()) {
-			currentShader = n->GetShader();
-			BindShader(currentShader);
-			UpdateShaderMatrices();
-		}
-
-		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
-		glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false, model.values);
-		glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
-
-		Material* material = n->GetMaterial();
-
-		bool renderFlag = false;
-		bool faceCulling = true;
-		bool tessFalg = false;
-
-		if (material) 
-		{
-			const auto& propertyMaps = material->GetProperties();
-
-			for (const auto& propertyMap : propertyMaps) {
-				for (const auto& [outerKey, innerMap] : propertyMap) {
-					for (const auto& [innerKey, value] : innerMap) {
-						int index = 0;
-						std::visit([&](auto&& val) {
-							using T = std::decay_t<decltype(val)>;
-							GLint location = glGetUniformLocation(currentShader->GetProgram(), innerKey.c_str());
-
-							if constexpr (std::is_same_v<T, GLuint>) 
-							{
-								glActiveTexture(GL_TEXTURE0 + index);
-								glBindTexture(GL_TEXTURE_2D, val); 
-								glUniform1i(location, index);
-							}
-							else if constexpr (std::is_same_v<T, Vector4>) 
-							{
-								glUniform4fv(location, 1, reinterpret_cast<const float*>(&val));
-							}
-							else if constexpr (std::is_same_v<T, Vector3>) 
-							{
-								glUniform3fv(location, 1, reinterpret_cast<const float*>(&val));
-							}
-							else if constexpr (std::is_same_v<T, Matrix4>) 
-							{
-								glUniformMatrix4fv(location, 1, false, val.values);
-							}
-							else if constexpr (std::is_same_v<T, int>) 
-							{
-								glUniform1i(location, val);
-							}
-							else if constexpr (std::is_same_v<T, float>)
-							{
-								glUniform1f(location, val);
-							}
-							else if constexpr (std::is_same_v<T, std::vector<GLuint>>) 
-							{
-								Mesh* myMesh = n->GetMesh();
-								for (int i = 0; i < myMesh->GetSubMeshCount(); ++i) 
-								{
-									glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
-									glActiveTexture(GL_TEXTURE0);
-									glBindTexture(GL_TEXTURE_2D, val[i]);
-									myMesh->DrawSubMesh(i);
-								}
-							}
-							else if constexpr (std::is_same_v<T, Material::WorldValue>) 
-							{
-								switch (val) {
-								case Material::CameraPosition:
-									glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-									break;
-								case Material::CubeMap:
-									glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 2);
-									glActiveTexture(GL_TEXTURE2);
-									glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
-									break;
-								case Material::FarPlane:
-									glUniform1f(location, 15000.0f);
-									break;
-
-								case Material::ProjMatrix:
-									glUniformMatrix4fv(location, 1, false, (float*)&this->projMatrix);
-									break;
-								case Material::TessQuad:
-									glPatchParameteri(GL_PATCH_VERTICES, 4);
-									tessFalg = true;
-									break;
-								case Material::TessTri:
-									glPatchParameteri(GL_PATCH_VERTICES, 3);
-									tessFalg = true;
-									break;
-								case Material::ViewMatrix:
-									glUniformMatrix4fv(location, 1, false, (float*)&camera->BuildViewMatrix());
-									break;
-								case Material::Temperature:
-									glUniform1f(location, temperature);
-									break;
-								case Material::DeltaTime:
-									glUniform1f(location, this->dt);
-									break;
-								case Material::DeltaTimeSeason:
-									glUniform1f(location, this->dtSeason);
-									break;
-								case Material::Dimensions:
-									glUniform2fv(location,1, (float*)&( Vector2(width, height)));
-									break;
-								case Material::DualFace:
-									faceCulling = false;
-									break;
-
-								case Material::DepthTexture:									
-									glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 3);
-									glActiveTexture(GL_TEXTURE3);
-									glBindTexture(GL_TEXTURE_2D, depthTex);
-
-									break;
-								case Material::LightRender:
-									renderFlag = true;
-									break;
-								default:
-									break;
-								}
-							}
-						}, value);
-					}
-				}
-			}
-		}
-		// No longer used
-		if (renderFlag) {
-
-			SetShaderLight(*light);
-			UpdateShaderMatrices();
-		}
-
-		if (faceCulling == false)
-			glDisable(GL_CULL_FACE);
-
-		if (tessFalg)
-			n->Draw(*this, GL_PATCHES);
-		else
-			n->Draw(*this);
-
-		if (faceCulling == false)
-			glEnable(GL_CULL_FACE);
-
-	}
 }
 
 
@@ -478,106 +174,12 @@ void Renderer::DrawSkybox() {
 }
 
 
-bool Renderer::SetTerrain(SceneNode* root)
-{
-	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	GLuint* newBumpTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-
-	if (!newTexture || !newBumpTexture) 
-		return false;
-
-	SetTextureRepeating(*newTexture, true);
-	SetTextureRepeating(*newBumpTexture, true);
-
-	Shader* newTerrainShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl"); 
-
-	texture.push_back(newTexture);
-	textureBump.push_back(newBumpTexture);
-	shader.emplace_back(newTerrainShader);
-
-	if (!newTerrainShader->LoadSuccess()) {
-		std::cout << "Failed setting parameters for Shader ID: " << newTerrainShader << std::endl;
-		return false;
-	}
-
-	Terrain* terrain = new Terrain(*newTexture, *newBumpTexture);
-	terrain->SetShader(newTerrainShader);
-
-	mapSize = terrain->GetMapSize();
-	root->AddChild(terrain);
-
-	return true;
-}
-
-
-bool Renderer::SetTree(SceneNode* root)
-{
-	Shader* newShader = new Shader("TexturedVertex.glsl", "TexturedFragment.glsl" , "WiggleGeometry.glsl");
-	Shader* newTrunkShader = new Shader("icicleVertex.glsl", "icicleFragment.glsl", "", "icicleTessControl.glsl", "icicleTessEvaluation.glsl");
-	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "IceOffset.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	
-	SetTextureRepeating(*newTexture, true);
-
-	texture.push_back(newTexture);
-	shader.emplace_back(newTrunkShader);
-	shader.emplace_back(newShader);
-
-	SceneNode* leaves = new Leaves(mapSize.x);
-	SceneNode* trunk = new Trunk(mapSize.x, *newTexture);
-
-	trunk->SetShader(newTrunkShader);
-	leaves->SetShader(newShader);
-
-	root->AddChild(leaves);
-	root->AddChild(trunk);
-	return true;
-}
-
-bool Renderer::SetWater(SceneNode* root)
-{
-	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "water.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0));
-	GLuint* newBumpTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "waterbump.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	Shader* waterShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl", "", "TessellationQuadControl.glsl", "waterTessEvaluation.glsl");
-	//Shader* waterShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl", "", "TessellationControl.glsl", "TessellationEvaluation.glsl");
-
-	SetTextureRepeating(*newTexture, true);
-	SetTextureRepeating(*newBumpTexture, true);
-
-	if (!waterShader->LoadSuccess())
-		return false;
-
-	texture.push_back(newTexture);
-	texture.push_back(newBumpTexture);
-	shader.emplace_back(waterShader);
-
-	Water* water = new Water(*newTexture, *newBumpTexture, mapSize.x);
-	water->SetShader(waterShader);
-
-	root->AddChild(water);
-	return true;
-
-}
-
-bool Renderer::SetCubeMap()
-{
-	skyQuad = Mesh::GenerateQuad();
-
-	skyboxShader = new Shader("skyboxVertex.glsl", "skyboxFragment.glsl");
-	cubeMap = SOIL_load_OGL_cubemap(
-		TEXTUREDIR "rusted_west.jpg", TEXTUREDIR "rusted_east.jpg",
-		TEXTUREDIR "rusted_up.jpg", TEXTUREDIR "rusted_down.jpg",
-		TEXTUREDIR "rusted_south.jpg", TEXTUREDIR "rusted_north.jpg",
-		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
-
-	if (!cubeMap) {
-		return false;
-	}
-
-	return true;
-}
-
 void Renderer::CombineBuffers() 
 {
+	glBindFramebuffer(GL_FRAMEBUFFER, postPFBO);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
 	// Bind to PP shader!
 	BindShader(combineShader);
 	modelMatrix.ToIdentity();
@@ -598,31 +200,18 @@ void Renderer::CombineBuffers()
 	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);
 
 	skyQuad->Draw();
+
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Renderer::PostProcess() 
 {
 	BindShader(postProcessShader);
-	glUniform1i(glGetUniformLocation(postProcessShader->GetProgram(), "sceneTex"), 0);
+	glUniform1i(glGetUniformLocation(postProcessShader->GetProgram(), "diffuseTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, postPTex);
 	skyQuad->Draw();
-}
-
-void Renderer::GenerateScreenTexture(GLuint& into, bool depth) {
-	glGenTextures(1, &into);
-	glBindTexture(GL_TEXTURE_2D, into);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	GLuint format = depth ? GL_DEPTH_COMPONENT24 : GL_RGBA8;
-	GLuint type = depth ? GL_DEPTH_COMPONENT : GL_RGBA;
-
-	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, type, GL_UNSIGNED_BYTE, NULL);
-	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 
@@ -668,3 +257,57 @@ void Renderer::DrawPointLights() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+
+
+Renderer::~Renderer(void)
+{
+	for (auto tex : texture) {
+		glDeleteTextures(1, tex);
+		delete tex;
+	}
+	texture.clear();
+
+	for (auto bumpTex : textureBump) {
+		glDeleteTextures(1, bumpTex);
+		delete bumpTex;
+	}
+	textureBump.clear();
+
+	for (auto shdr : shader) {
+		delete shdr;
+	}
+	shader.clear();
+
+	delete camera;
+	delete skyQuad;
+
+	delete root;
+	delete skyboxShader;
+
+	glDeleteTextures(1, &currentBumpMap);
+	glDeleteTextures(1, &currentTexture);
+	glDeleteTextures(1, &depthTex);
+	glDeleteTextures(1, &depthFBO);
+	glDeleteTextures(1, &postPFBO);
+	glDeleteTextures(1, &postPTex);
+
+
+	// Shadow mapping ----------------------------------------------------------
+	delete sceneShader;
+	delete combineShader;
+	delete postProcessShader;
+	delete pointlightShader;
+	delete sphere;
+	delete[] pointLights;
+
+	glDeleteTextures(1, &bufferColourTex);
+	glDeleteTextures(1, &bufferNormalTex);
+	glDeleteTextures(1, &bufferDepthTex);
+	glDeleteTextures(1, &lightDiffuseTex);
+	glDeleteTextures(1, &lightSpecularTex);
+
+	glDeleteFramebuffers(1, &bufferFBO);
+	glDeleteFramebuffers(1, &pointLightFBO);
+	// End Shadow mapping -------------------------------------------------------
+
+}

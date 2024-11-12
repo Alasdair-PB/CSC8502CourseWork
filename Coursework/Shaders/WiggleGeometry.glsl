@@ -33,7 +33,6 @@ out Vertex {
     vec3 tangent;
     vec3 binormal;
     vec3 worldPos;
-    float iceShading;
 
 } OUT;
 
@@ -74,7 +73,6 @@ void main()
         OUT.colour = IN[i].colour;
         OUT.texCoord = IN[i].texCoord;
         OUT.normal = IN[i].normal;
-        OUT.iceShading = 0;
         EmitVertex();
     }
     EndPrimitive();

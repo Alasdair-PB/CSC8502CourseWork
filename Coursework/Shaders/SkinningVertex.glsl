@@ -23,7 +23,7 @@ void main ( void )
 
 	for (int i = 0; i < 4; ++ i ) 
 	{
-		int jointIndex = jointIndices [i];
+		int jointIndex = jointIndices[i];
 		float jointWeight = jointWeights [i];
 		skelPos += joints [jointIndex] * localPos * jointWeight;
 	}
