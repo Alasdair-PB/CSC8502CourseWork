@@ -2,7 +2,7 @@
 
 Trunk::Trunk(float hSize, GLuint icicleMask, GLuint iceTexture)
 {	
-	//GetMaterial()->AddProperty("icicleMask", icicleMask);
+	GetMaterial()->AddProperty("icicleMask", icicleMask);
 	GetMaterial()->AddProperty("iceTex", iceTexture);
 	SetFromSubMesh("Trunk");
 

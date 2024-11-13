@@ -17,7 +17,7 @@ in Vertex {
     vec4 shadowProj; 
 } IN;
 
-out vec4 fragColour;
+out vec4 fragColour[2]; 
 
 void main(void) {
     vec3 incident = normalize(lightPos - IN.worldPos);
@@ -49,19 +49,17 @@ void main(void) {
         }
     }
     
-    vec3 surface = (diffuse.rgb * lightColour.rgb); 
+    /*vec3 surface = (diffuse.rgb * lightColour.rgb); 
     fragColour.rgb = surface * attenuation * lambert; 
     fragColour.rgb += (lightColour.rgb * attenuation * specFactor) * 0.33;
     fragColour.rgb *= shadow; 
     fragColour.rgb += surface * 0.1f; 
-    fragColour.a = diffuse.a; 
+    fragColour.a = diffuse.a; */
 
-    /*#
-    vec3 surface = (diffuse.rgb);// * lightColour.rgb); // Base colour
-    fragColour.rgb = surface;// * attenuation * lambert; // diffuse
-    //fragColour.rgb += (lightColour.rgb * attenuation * specFactor) * 0.33;
-    fragColour.rgb *= shadow; // shadowing factor
-    //fragColour.rgb += surface * 0.1f; // ambient
-    fragColour.a = diffuse.a; // alpha
-    */
+    
+    vec3 surface = (diffuse.rgb);
+    fragColour[0].rgb = surface;
+    fragColour[0].rgb *= shadow; 
+    fragColour[0].a = diffuse.a; 
+    fragColour[1] = vec4(normal * 0.5 + 0.5, 1.0);
 }
