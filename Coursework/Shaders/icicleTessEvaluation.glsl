@@ -46,6 +46,7 @@ void main() {
     vec3 edge1 = worldPos.xyz - gl_in[0].gl_Position.xyz;
     vec3 edge2 = gl_in[1].gl_Position.xyz - gl_in[0].gl_Position.xyz;
     OUT.normal = normalize(cross(edge1, edge2));
+    //OUT.normal = IN[0].normal;
 
     gl_Position = projMatrix * viewMatrix * worldPos;
 

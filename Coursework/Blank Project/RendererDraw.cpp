@@ -2,6 +2,17 @@
 #include "../nclgl/Material.h"
 #include "../nclgl/MeshAnimation.h"
 
+// Render with basic shader to avoid recompiling complex shaders
+void Renderer::DrawNodeWithFallBack(SceneNode* n)
+{
+	if (n->GetMesh()) {
+		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
+		glUniformMatrix4fv(glGetUniformLocation(fallBackShader->GetProgram(), "modelMatrix"), 1, false, model.values);
+		glUniform4fv(glGetUniformLocation(fallBackShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
+		UpdateShaderMatrices();
+		n->Draw(*this);
+	}
+}
 
 void Renderer::DrawNode(SceneNode* n) {
 
@@ -103,12 +114,8 @@ void Renderer::DrawNode(SceneNode* n) {
 			}
 		}
 		
-		// No longer used
-		if (renderFlag) {
-
+		if (renderFlag) 
 			SetShaderLight(*light);
-			UpdateShaderMatrices();
-		}
 
 		if (faceCulling == false)
 			glDisable(GL_CULL_FACE);
@@ -175,8 +182,15 @@ void Renderer::SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFal
 			glActiveTexture(GL_TEXTURE0 + *index);
 			glBindTexture(GL_TEXTURE_2D, depthTex);
 			*index += 1;
-
 			break;
+
+		case Material::ShadowMap:
+			// Changed to hard setting while debugging
+			glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "shadowTex"), 2);
+			glActiveTexture(GL_TEXTURE2);
+			glBindTexture(GL_TEXTURE_2D, shadowTex);
+			break;
+
 		case Material::LightRender:
 			*renderFlag = true;
 			break;

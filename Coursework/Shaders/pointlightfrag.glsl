@@ -3,7 +3,7 @@
 uniform sampler2D depthTex;
 uniform sampler2D normTex;
 
-uniform vec2 pixelSize; // reciprocal of resolution
+uniform vec2 pixelSize; 
 uniform vec3 cameraPos;
 
 uniform float lightRadius;
@@ -14,9 +14,11 @@ uniform mat4 inverseProjView;
 out vec4 diffuseOutput;
 out vec4 specularOutput;
 
-void main(void) {
+void main(void) 
+{
     vec2 texCoord = gl_FragCoord.xy * pixelSize;
     float depth = texture(depthTex, texCoord).r;
+
     vec3 ndcPos = vec3(texCoord, depth) * 2.0 - 1.0;
     vec4 invClipPos = inverseProjView * vec4(ndcPos, 1.0);
     vec3 worldPos = invClipPos.xyz / invClipPos.w;

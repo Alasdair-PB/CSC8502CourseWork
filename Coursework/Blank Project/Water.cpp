@@ -17,10 +17,6 @@ Water::Water(GLuint texture, GLuint bumpTex, GLuint iceTex, GLuint iceTexBump, f
 	GetMaterial()->AddProperty("depthTex", Material::DepthTexture);
 
 	GetMaterial()->AddProperty("transparency", 0.8f);
-	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
-	GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
-	GetMaterial()->AddProperty("foamCutoff", 0.4f);
-	GetMaterial()->AddProperty("foamSpeed", 4.0f);
 	GetMaterial()->AddProperty("scrollSpeed", 0.005f);	
 	GetMaterial()->AddProperty("waterScale", 25.0f);
 
@@ -28,7 +24,9 @@ Water::Water(GLuint texture, GLuint bumpTex, GLuint iceTex, GLuint iceTexBump, f
 	GetMaterial()->AddProperty("temperature", Material::Temperature);
 	GetMaterial()->AddProperty("dt", Material::DeltaTime);
 
-	GetMaterial()->AddProperty("cameraPos", Material::CameraPosition);
+	GetMaterial()->AddProperty("cameraPos", Material::CameraPosition);	
+	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
+	GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
 
 	SetTransform(Matrix4::Translation(Vector3(hSize * 0.5f, 100, hSize * 0.5f)) * Matrix4::Rotation(270.0f, Vector3(1, 0, 0)));
 	SetBoundingRadius(15.0f);	

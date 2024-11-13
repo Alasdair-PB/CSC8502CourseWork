@@ -34,14 +34,20 @@ protected:
 	void SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFalg, int* index, Material::WorldValue val, GLint location);
 	void DepthBufferWrite();
 	void DeferredBufferWrite();
+	void ShadowBufferWrite();
 
 	void DrawSkybox();
 	void DrawNodes();
+	void DrawDepthNodes();
+	void DrawNodeWithFallBack(SceneNode* n);
+
 	void DrawNode(SceneNode* n);
 	void DrawOpaque();
 	void DrawTransparent();
 	void DrawPointLights();
 	void DrawNodeReflective();
+
+	void SetProjectionMatrix();
 
 	void CombineBuffers();
 	void GenerateScreenTexture(GLuint& into, bool depth = false);
@@ -51,8 +57,10 @@ protected:
 	void SetLights();
 
 	void SetupFramebuffer();
+	void SetUpShadowMapBuffer();
 	void SetupDepthbuffer();
 	void SetupDeferredbuffer();
+	#define SHADOWSIZE 2048
 
 
 
@@ -72,13 +80,15 @@ protected:
 
 	Vector3 lastCameraPos;
 
+	Shader* currentShader;
 
 	Shader* skyboxShader;
-	Shader* currentShader;
 	Shader* sceneShader;
 	Shader* pointlightShader;
 	Shader* combineShader;
 	Shader* postProcessShader;
+	Shader* shadowScene;
+	Shader* fallBackShader;
 
 	GLuint cubeMap;
 	GLuint currentTexture;
@@ -86,6 +96,9 @@ protected:
 
 	GLuint depthFBO;
 	GLuint depthTex;
+
+	GLuint shadowTex;
+	GLuint shadowFBO;
 
 	GLuint postPFBO;         
 	GLuint postPTex;

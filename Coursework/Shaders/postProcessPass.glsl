@@ -11,7 +11,7 @@ const float scaleFactors[7] = float[](0.006, 0.061, 0.242, 0.383, 0.242, 0.061, 
 
 void main(void) 
 {
-    vec3 diffuse = texture(diffuseTex, IN.texCoord).xyz;
+    vec4 diffuse = texture(diffuseTex, IN.texCoord);
 
 
 	/*fragColour = vec4(0, 0, 0, 1);
@@ -26,7 +26,10 @@ void main(void)
 		fragColour += tmp * scaleFactors[i];
 	}*/
 
-	fragColour.xyz = diffuse;
-	fragColour.a = 1;
-	fragColour.a = (fragColour.r + fragColour.g + fragColour.b <= 0.075) ? 0.0 : 1.0;
+	if (diffuse.xyz == vec3(0,1,0))
+		fragColour.a = 0;
+	else
+		fragColour = diffuse;
+	//fragColour.a = 1;
+	//fragColour.a = (fragColour.r + fragColour.g + fragColour.b <= 0.075) ? 0.0 : 1.0;
 }

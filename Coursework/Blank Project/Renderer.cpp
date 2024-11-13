@@ -5,6 +5,10 @@
 #include "../nclgl/Light.h"
 #include "../nclgl/Pathing.h"
 
+SceneNode* nodesphere;
+SceneNode* nextSphere;
+
+
 Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 {	
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
@@ -20,8 +24,41 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	camera->GetPath()->SetPathPattern(cameraPos, Vector3(800,0,0), Vector3(-800,0,0), Vector3(0,0,500), 3);
 	lastCameraPos = cameraPos;
 
+	// -------------------------------------------------------------------------------------------------
+	nodesphere = new SceneNode(sphere, Vector4(1, 1, 1, 1));
+	nodesphere->SetModelScale(Vector3(250, 250, 250));
+	nodesphere->SetTransform(Matrix4::Translation(cameraPos + Vector3(0,100,0)));
+	Shader* newTerrainShader = new Shader("shadowscenevert.glsl", "shadowscenefrag.glsl");
+	nodesphere->SetShader(newTerrainShader);
+
+	GLuint* texture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	GLuint* textureBump = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	SetTextureRepeating(*texture, true);
+	SetTextureRepeating(*textureBump, true);
+
+	nodesphere->GetMaterial()->AddProperty("shadowMapping", Material::ShadowMap);
+	nodesphere->GetMaterial()->AddProperty("diffuseTex", *texture);
+	nodesphere->GetMaterial()->AddProperty("bumpTex", *textureBump);
+	nodesphere->GetMaterial()->AddProperty("lightRender", Material::LightRender);
+	nodesphere->GetMaterial()->AddProperty("shadowMapping", Material::ShadowMap);
+	
+	shader.emplace_back(newTerrainShader);
+	root->AddChild(nodesphere);
+
+	nextSphere = new SceneNode(sphere, Vector4(1, 1, 1, 1));
+	nextSphere->SetModelScale(Vector3(250, 250, 250));
+	nextSphere->SetTransform(Matrix4::Translation(cameraPos + Vector3(0, 600, 0)));
+	nextSphere->SetShader(newTerrainShader);
+
+	nextSphere->GetMaterial()->AddProperty("shadowMapping", Material::ShadowMap);
+	nextSphere->GetMaterial()->AddProperty("diffuseTex", *texture);
+	nextSphere->GetMaterial()->AddProperty("bumpTex", *textureBump);
+	nextSphere->GetMaterial()->AddProperty("lightRender", Material::LightRender);
+	root->AddChild(nextSphere);
+	// -------------------------------------------------------------------------------------------------
+
 	SetFPSCharacter(root);
-	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+	SetProjectionMatrix();
 	this->temperature = -10.0f;
 	this->dt = 0;
 	this->dtSeason = 0;
@@ -32,27 +69,35 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	SetupFramebuffer();
 	SetLights();
 	SetupDeferredbuffer();
+	SetUpShadowMapBuffer();
 
 	sceneShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl"); 
+	shadowScene = new Shader("shadowscenevert.glsl", "shadowscenefrag.glsl");
 	pointlightShader = new Shader("pointlightvertex.glsl", "pointlightfrag.glsl");
 	combineShader = new Shader("combinevert.glsl", "combinefrag.glsl");
 	postProcessShader = new Shader("combinevert.glsl", "postProcessPass.glsl"); 
+	fallBackShader = new Shader("shadowVert.glsl", "shadowFrag.glsl");
 
-	if (!sceneShader->LoadSuccess() || !pointlightShader->LoadSuccess() || !combineShader->LoadSuccess())
+	if (!sceneShader->LoadSuccess() || !pointlightShader->LoadSuccess() || !combineShader->LoadSuccess() 
+		|| !fallBackShader->LoadSuccess() || !postProcessShader->LoadSuccess()) 
 		return;
+	
 
 	GLEnablers();
 	init = true;
 }
+
+void Renderer::SetProjectionMatrix() { projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);}
 
 void Renderer::UpdateScene(float dt) 
 {	
 	UpdateFrameTime(dt);
 	UpdateTemperature(dt);
 	camera->UpdateCamera(dt);
+
 	UpdateRunner();
 	viewMatrix = camera->BuildViewMatrix();
-	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+	SetProjectionMatrix();
 	root->Update(dt, camera->GetPosition());
 }
 
@@ -90,7 +135,7 @@ void Renderer::UpdateRunner()
 		Matrix4::Rotation(yaw, Vector3(0, 1, 0)) *
 		Matrix4::Rotation(180, Vector3(0, 1, 0));
 
-	Vector3 offsetMatrix = Vector3(0, -250.0f, 0);
+	Vector3 offsetMatrix = Vector3(0, -99999.0f, 0);
 
 	if (lastCameraPos == cameraPos)
 		nextPos = nextPos * Matrix4::Translation(offsetMatrix);
@@ -116,6 +161,34 @@ void Renderer::DepthBufferWrite()
 }
 
 
+void Renderer::ShadowBufferWrite() 
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, SHADOWSIZE, SHADOWSIZE);
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+	BindShader(fallBackShader);
+	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), Vector3(0, 0, 0));
+	projMatrix = Matrix4::Perspective(1, 100, 1, 45);
+	shadowMatrix = projMatrix * viewMatrix;
+
+	UpdateShaderMatrices();
+	nodesphere->Draw(*this);
+
+	UpdateShaderMatrices();
+	nextSphere->Draw(*this);
+
+	DrawDepthNodes();
+
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glViewport(0, 0, width, height);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	SetProjectionMatrix();
+	viewMatrix = camera->BuildViewMatrix();
+}
+
 void Renderer::DeferredBufferWrite() 
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
@@ -132,15 +205,18 @@ void Renderer::RenderScene()
 	BuildNodeLists(root);
 	SortNodeLists();
 
-	DepthBufferWrite();
-	DeferredBufferWrite();
 
-	DrawSkybox();
-	DrawPointLights();
+	ShadowBufferWrite();
+	//DepthBufferWrite();		
+	
+	//DrawSkybox();
+	//DeferredBufferWrite();
 
-	CombineBuffers();
-	PostProcess();
+	//DrawPointLights();
+	//CombineBuffers();
+	//PostProcess();
 
+	DrawOpaque();
 	ClearNodeLists();
 }
 
@@ -180,10 +256,25 @@ void Renderer::ClearNodeLists() {
 
 void Renderer::DrawOpaque() 
 {
+	SetProjectionMatrix();
+	viewMatrix = camera->BuildViewMatrix();
 	for (const auto& i : nodeList) {
 		DrawNode(i);
 	}
 }
+
+
+void Renderer::DrawDepthNodes()
+{
+	BindShader(fallBackShader);
+	UpdateShaderMatrices();
+
+	for (const auto& i : nodeList) {
+		DrawNodeWithFallBack(i);
+	}
+}
+
+
 
 void Renderer::DrawTransparent()
 {
@@ -214,8 +305,6 @@ void Renderer::CombineBuffers()
 	glBindFramebuffer(GL_FRAMEBUFFER, postPFBO);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-	// Bind to PP shader!
 	BindShader(combineShader);
 	modelMatrix.ToIdentity();
 	viewMatrix.ToIdentity();
@@ -234,9 +323,11 @@ void Renderer::CombineBuffers()
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);
 
+	glUniform1i(glGetUniformLocation(combineShader->GetProgram(), "depthTex"), 3);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
+
 	skyQuad->Draw();
-
-
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -271,9 +362,9 @@ void Renderer::DrawPointLights() {
 
 	glUniform3fv(glGetUniformLocation(pointlightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 	glUniform2f(glGetUniformLocation(pointlightShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
-
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	Matrix4 invViewProj = (projMatrix * viewMatrix).Inverse();
+
 	glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "inverseProjView"), 1, false, invViewProj.values);
 
 	UpdateShaderMatrices();
@@ -326,15 +417,16 @@ Renderer::~Renderer(void)
 	glDeleteTextures(1, &postPFBO);
 	glDeleteTextures(1, &postPTex);
 
-
-	// Shadow mapping ----------------------------------------------------------
 	delete sceneShader;
 	delete combineShader;
 	delete postProcessShader;
 	delete pointlightShader;
+	delete shadowScene;
 	delete sphere;
 	delete[] pointLights;
 
+	glDeleteTextures(1, &shadowFBO);
+	glDeleteTextures(1, &shadowTex);
 	glDeleteTextures(1, &bufferColourTex);
 	glDeleteTextures(1, &bufferNormalTex);
 	glDeleteTextures(1, &bufferDepthTex);
@@ -343,6 +435,4 @@ Renderer::~Renderer(void)
 
 	glDeleteFramebuffers(1, &bufferFBO);
 	glDeleteFramebuffers(1, &pointLightFBO);
-	// End Shadow mapping -------------------------------------------------------
-
 }

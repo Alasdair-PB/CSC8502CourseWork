@@ -24,7 +24,9 @@ bool Renderer::SetTerrain(SceneNode* root)
 	SetTextureRepeating(*newTexture, true);
 	SetTextureRepeating(*newBumpTexture, true);
 
-	Shader* newTerrainShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl");
+	//Shader* newTerrainShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl");
+	Shader* newTerrainShader = new Shader("shadowscenevert.glsl", "shadowscenefrag.glsl");
+
 
 	texture.push_back(newTexture);
 	textureBump.push_back(newBumpTexture);
@@ -140,7 +142,9 @@ bool Renderer::SetCubeMap()
 void Renderer::SetLights()
 {
 	pointLights = new Light[LIGHT_NUM];
-	light = new Light(mapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 0.8f, 0.5f, 1), mapSize.x * 0.5f);
+
+	Vector3 lightPos = mapSize * Vector3(0.5f, 5.0f, 0.5f);
+	light = new Light(lightPos, Vector4(1, 0.8f, 0.5f, 1), mapSize.x);
 
 	for (int i = 0; i < LIGHT_NUM; ++i) {
 		Light& l = pointLights[i];
