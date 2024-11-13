@@ -2,14 +2,16 @@
 #include "../nclgl/Material.h"
 #include "../nclgl/MeshAnimation.h"
 
-// Render with basic shader to avoid recompiling complex shaders
-void Renderer::DrawNodeWithFallBack(SceneNode* n)
+void Renderer::DrawNodeWithFallBack(SceneNode* n, Shader* shader)
 {
 	if (n->GetMesh()) {
 		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
-		glUniformMatrix4fv(glGetUniformLocation(fallBackShader->GetProgram(), "modelMatrix"), 1, false, model.values);
-		glUniform4fv(glGetUniformLocation(fallBackShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
+		glUniformMatrix4fv(glGetUniformLocation(shader->GetProgram(), "modelMatrix"), 1, false, model.values);
+		glUniform4fv(glGetUniformLocation(shader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
 		UpdateShaderMatrices();
+		//glUniformMatrix4fv(glGetUniformLocation(shader->GetProgram(), "modelMatrix"), 1, false, model.values);
+		//glUniformMatrix4fv(glGetUniformLocation(shader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
+
 		n->Draw(*this);
 	}
 }
@@ -186,9 +188,10 @@ void Renderer::SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFal
 
 		case Material::ShadowMap:
 			// Changed to hard setting while debugging
-			glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "shadowTex"), 2);
-			glActiveTexture(GL_TEXTURE2);
+			glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "shadowTex"), *index);
+			glActiveTexture(GL_TEXTURE0 + *index);
 			glBindTexture(GL_TEXTURE_2D, shadowTex);
+			*index += 1;
 			break;
 
 		case Material::LightRender:

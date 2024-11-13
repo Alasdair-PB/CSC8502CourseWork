@@ -8,81 +8,87 @@
 SceneNode* nodesphere;
 SceneNode* nextSphere;
 
+GLuint sphereTexture;
+GLuint sphereBumpTexture;
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 {	
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	root = new SceneNode();
 
-	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root)) 
-		return;	
+	//if (!SetCubeMap())// || !SetTerrain(root) || !SetWater(root) || !SetTree(root))
+		//return;	
+
+	SetTree(root);
+	mapSize = Vector3(1.0, 1.0, 1.0);
 
 	Vector3 cameraPos = mapSize * Vector3(0.5f, 5.0f, 0.5f);
-	cameraPos.y = 250.0f;
+	//cameraPos.y = 250.0f;
+	camera = new Camera(-30.0f, 315.0f, Vector3(-8.0f, 5.0f, 8.0f));
 
-	camera = new Camera(-45.0f, 0.0f, cameraPos);
+	//camera = new Camera(-45.0f, 0.0f, cameraPos);
 	camera->GetPath()->SetPathPattern(cameraPos, Vector3(800,0,0), Vector3(-800,0,0), Vector3(0,0,500), 3);
 	lastCameraPos = cameraPos;
 
 	// -------------------------------------------------------------------------------------------------
-	nodesphere = new SceneNode(sphere, Vector4(1, 1, 1, 1));
-	nodesphere->SetModelScale(Vector3(250, 250, 250));
-	nodesphere->SetTransform(Matrix4::Translation(cameraPos + Vector3(0,100,0)));
-	Shader* newTerrainShader = new Shader("shadowscenevert.glsl", "shadowscenefrag.glsl");
-	nodesphere->SetShader(newTerrainShader);
+	shadowScene = new Shader("shadowscenevert.glsl", "shadowscenefrag.glsl");
 
-	GLuint* texture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	GLuint* textureBump = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	SetTextureRepeating(*texture, true);
-	SetTextureRepeating(*textureBump, true);
+	sphereTexture = SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	sphereBumpTexture = SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	SetTextureRepeating(sphereTexture, true);
+	SetTextureRepeating(sphereBumpTexture, true);
 
-	nodesphere->GetMaterial()->AddProperty("shadowMapping", Material::ShadowMap);
-	nodesphere->GetMaterial()->AddProperty("diffuseTex", *texture);
-	nodesphere->GetMaterial()->AddProperty("bumpTex", *textureBump);
+	nextSphere = new SceneNode(Mesh::GenerateQuad(), Vector4(1, 1, 1, 1));
+	nextSphere->SetModelScale(Vector3(1, 1, 1));
+	nextSphere->SetTransform(Matrix4::Translation(cameraPos + Vector3(0, 0, 0)));
+	nextSphere->SetShader(shadowScene);
+	nextSphere->GetMaterial()->AddProperty("diffuseTex", sphereTexture);
+	nextSphere->GetMaterial()->AddProperty("bumpTex", sphereBumpTexture);
+	nextSphere->GetMaterial()->AddProperty("lightRender", Material::LightRender);
+	nextSphere->GetMaterial()->AddProperty("shadowMapping", Material::ShadowMap);
+	nextSphere->GetMaterial()->AddProperty("cameraPos", Material::CameraPosition);
+
+	root->AddChild(nextSphere);
+
+	Vector3 lightPos = mapSize * Vector3(0.5f, 5.0f, 0.5f);
+
+	nodesphere = new SceneNode(Mesh::LoadFromMeshFile("Sphere.msh"), Vector4(1, 1, 1, 1));
+	nodesphere->SetModelScale(Vector3(1, 1, 1));
+	nodesphere->SetTransform(Matrix4::Translation(cameraPos + Vector3(0, 5, 0)));
+	nodesphere->SetShader(shadowScene);
+	nodesphere->GetMaterial()->AddProperty("diffuseTex", sphereTexture);
+	nodesphere->GetMaterial()->AddProperty("bumpTex", sphereBumpTexture);
 	nodesphere->GetMaterial()->AddProperty("lightRender", Material::LightRender);
 	nodesphere->GetMaterial()->AddProperty("shadowMapping", Material::ShadowMap);
-	
-	shader.emplace_back(newTerrainShader);
+	nodesphere->GetMaterial()->AddProperty("cameraPos", Material::CameraPosition);
+
 	root->AddChild(nodesphere);
 
-	nextSphere = new SceneNode(sphere, Vector4(1, 1, 1, 1));
-	nextSphere->SetModelScale(Vector3(250, 250, 250));
-	nextSphere->SetTransform(Matrix4::Translation(cameraPos + Vector3(0, 600, 0)));
-	nextSphere->SetShader(newTerrainShader);
-
-	nextSphere->GetMaterial()->AddProperty("shadowMapping", Material::ShadowMap);
-	nextSphere->GetMaterial()->AddProperty("diffuseTex", *texture);
-	nextSphere->GetMaterial()->AddProperty("bumpTex", *textureBump);
-	nextSphere->GetMaterial()->AddProperty("lightRender", Material::LightRender);
-	root->AddChild(nextSphere);
 	// -------------------------------------------------------------------------------------------------
 
-	SetFPSCharacter(root);
-	SetProjectionMatrix();
+	//SetFPSCharacter(root);
+	//SetProjectionMatrix();
 	this->temperature = -10.0f;
 	this->dt = 0;
 	this->dtSeason = 0;
 	this->currentFrame = 0;
 	this->frameTime = 0.0f;
 
-	SetupDepthbuffer();
-	SetupFramebuffer();
+	//SetupDepthbuffer();
+	//SetupFramebuffer();
 	SetLights();
-	SetupDeferredbuffer();
+	//SetupDeferredbuffer();
 	SetUpShadowMapBuffer();
 
 	sceneShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl"); 
-	shadowScene = new Shader("shadowscenevert.glsl", "shadowscenefrag.glsl");
 	pointlightShader = new Shader("pointlightvertex.glsl", "pointlightfrag.glsl");
 	combineShader = new Shader("combinevert.glsl", "combinefrag.glsl");
 	postProcessShader = new Shader("combinevert.glsl", "postProcessPass.glsl"); 
 	fallBackShader = new Shader("shadowVert.glsl", "shadowFrag.glsl");
 
-	if (!sceneShader->LoadSuccess() || !pointlightShader->LoadSuccess() || !combineShader->LoadSuccess() 
-		|| !fallBackShader->LoadSuccess() || !postProcessShader->LoadSuccess()) 
-		return;
+	//if (!sceneShader->LoadSuccess() || !pointlightShader->LoadSuccess() || !combineShader->LoadSuccess()  || !postProcessShader->LoadSuccess()) 
+	//	return;
 	
-
 	GLEnablers();
 	init = true;
 }
@@ -95,7 +101,7 @@ void Renderer::UpdateScene(float dt)
 	UpdateTemperature(dt);
 	camera->UpdateCamera(dt);
 
-	UpdateRunner();
+	//UpdateRunner();
 	viewMatrix = camera->BuildViewMatrix();
 	SetProjectionMatrix();
 	root->Update(dt, camera->GetPosition());
@@ -168,25 +174,26 @@ void Renderer::ShadowBufferWrite()
 	glViewport(0, 0, SHADOWSIZE, SHADOWSIZE);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-	BindShader(fallBackShader);
 	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), Vector3(0, 0, 0));
 	projMatrix = Matrix4::Perspective(1, 100, 1, 45);
 	shadowMatrix = projMatrix * viewMatrix;
 
+	BindShader(fallBackShader);
+	//DrawDepthNodes(fallBackShader);
+
+	modelMatrix = Matrix4::Translation(Vector3(0, 0, 0));
 	UpdateShaderMatrices();
 	nodesphere->Draw(*this);
-
+	modelMatrix = Matrix4::Translation(Vector3(0, -1, 0)) * Matrix4::Rotation(90, Vector3(1, 0, 0));
 	UpdateShaderMatrices();
 	nextSphere->Draw(*this);
-
-	DrawDepthNodes();
+	//DrawOpaque();
 
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glViewport(0, 0, width, height);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	SetProjectionMatrix();
 	viewMatrix = camera->BuildViewMatrix();
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 }
 
 void Renderer::DeferredBufferWrite() 
@@ -194,29 +201,55 @@ void Renderer::DeferredBufferWrite()
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	UpdateShaderMatrices();
-	DrawNodes();
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	DrawOpaque();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);	
+	
+	SetProjectionMatrix();
+	viewMatrix = camera->BuildViewMatrix();
 }
 
 void Renderer::RenderScene() 
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//DrawSkybox();
 
 	BuildNodeLists(root);
 	SortNodeLists();
 
-
 	ShadowBufferWrite();
-	//DepthBufferWrite();		
-	
-	//DrawSkybox();
-	//DeferredBufferWrite();
 
+	//DepthBufferWrite();		
+	//DeferredBufferWrite();
 	//DrawPointLights();
 	//CombineBuffers();
 	//PostProcess();
 
-	DrawOpaque();
+	BindShader(shadowScene);
+	SetShaderLight(*light);
+
+	glUniform1i(glGetUniformLocation(shadowScene->GetProgram(), "diffuseTex"), 0);
+	glUniform1i(glGetUniformLocation(shadowScene->GetProgram(), "bumpTex"), 1);
+	glUniform1i(glGetUniformLocation(shadowScene->GetProgram(), "shadowTex"), 2);
+	glUniform3fv(glGetUniformLocation(shadowScene->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, sphereTexture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, sphereBumpTexture);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, shadowTex);
+
+	modelMatrix = Matrix4::Translation(Vector3(0, 0, 0));
+	UpdateShaderMatrices();
+	nodesphere->Draw(*this);
+	modelMatrix = Matrix4::Translation(Vector3(0, -1, 0)) * Matrix4::Rotation(90, Vector3(1, 0, 0));
+	UpdateShaderMatrices();
+	nextSphere->Draw(*this);
+
+
+	//DrawDepthNodes(shadowScene);
+
+	//DrawOpaque();
 	ClearNodeLists();
 }
 
@@ -264,13 +297,10 @@ void Renderer::DrawOpaque()
 }
 
 
-void Renderer::DrawDepthNodes()
+void Renderer::DrawDepthNodes(Shader* shader)
 {
-	BindShader(fallBackShader);
-	UpdateShaderMatrices();
-
 	for (const auto& i : nodeList) {
-		DrawNodeWithFallBack(i);
+		DrawNodeWithFallBack(i, shader);
 	}
 }
 

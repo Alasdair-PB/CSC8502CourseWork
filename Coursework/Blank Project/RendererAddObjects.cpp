@@ -143,10 +143,12 @@ void Renderer::SetLights()
 {
 	pointLights = new Light[LIGHT_NUM];
 
-	Vector3 lightPos = mapSize * Vector3(0.5f, 5.0f, 0.5f);
-	light = new Light(lightPos, Vector4(1, 0.8f, 0.5f, 1), mapSize.x);
+	//Vector3 lightPos = Vector3(1.0f,3.0f,0.1f);
+	//light = new Light(lightPos, Vector4(1, 0.8f, 0.5f, 1), 500);//mapSize.x);
+	light = new Light(Vector3(-20.0f, 10.0f, -20.0f), Vector4(1, 1, 1, 1), 250.0f);
 
-	for (int i = 0; i < LIGHT_NUM; ++i) {
+
+	/*for (int i = 0; i < LIGHT_NUM; ++i) {
 		Light& l = pointLights[i];
 		l.SetPosition(Vector3(rand() % (int)mapSize.x,
 			150.0f,
@@ -157,5 +159,5 @@ void Renderer::SetLights()
 			0.5f + (float)(rand() / (float)RAND_MAX),
 			1));
 		l.SetRadius(1500.0f + (rand() % 250));
-	}
+	}*/
 }

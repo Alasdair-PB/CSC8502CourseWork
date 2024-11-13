@@ -38,14 +38,13 @@ protected:
 
 	void DrawSkybox();
 	void DrawNodes();
-	void DrawDepthNodes();
-	void DrawNodeWithFallBack(SceneNode* n);
+	void DrawDepthNodes(Shader* shader);
+	void DrawNodeWithFallBack(SceneNode* n, Shader* shader);
 
 	void DrawNode(SceneNode* n);
 	void DrawOpaque();
 	void DrawTransparent();
 	void DrawPointLights();
-	void DrawNodeReflective();
 
 	void SetProjectionMatrix();
 
@@ -60,6 +59,7 @@ protected:
 	void SetUpShadowMapBuffer();
 	void SetupDepthbuffer();
 	void SetupDeferredbuffer();
+
 	#define SHADOWSIZE 2048
 
 
