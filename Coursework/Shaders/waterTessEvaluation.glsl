@@ -44,8 +44,10 @@ void main ()
 
     vec4 worldPos = modelMatrix * vec4(combinedPos, 1);
 
+
     float frequency = 0.2;
-    worldPos.y += 10.0 * sin(-worldPos.x * frequency + -worldPos.z * frequency + dt);
+    worldPos.y += clamp((temperature - 40)*0.1f, 0, 1) * 10.0 * sin(-worldPos.x * frequency + -worldPos.z * frequency + dt);
+   
 
     gl_Position = projMatrix * viewMatrix * worldPos;
 

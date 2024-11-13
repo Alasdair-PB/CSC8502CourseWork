@@ -26,7 +26,7 @@ class Pathing
 	public:
 		Pathing() 
 		{
-			followingPath = true;
+			followingPath = false;
 			bezierT = 0.0f;
 			currentCurveIndex = 0;
 			bezierSpeed = 0.1f;

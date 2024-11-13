@@ -2,6 +2,8 @@
 
 uniform sampler2D diffuseTex;
 uniform sampler2D bumpTex;
+uniform sampler2D iceTex;
+uniform sampler2D iceTexBump;
 
 uniform sampler2D depthTex; 
 uniform samplerCube cubeTex;
@@ -12,10 +14,12 @@ uniform mat4 projMatrix;
 uniform mat4 viewMatrix;
 
 uniform float temperature;
-
+uniform float scrollSpeed;
+uniform float dt;
 uniform float transparency;
 uniform float foamCutoff;
 uniform float foamSpeed;
+uniform float waterScale;
 
 uniform vec2 dimensions;
 
@@ -41,7 +45,11 @@ out vec4[2] fragColour;
 
 void main(void) 
 {
-    vec4 diffuse = texture(diffuseTex, IN.texCoord); 
+    float waterCycle = dt * scrollSpeed; 
+    vec2 scrolledTexCoord = IN.texCoord + vec2(waterCycle, waterCycle);
+    vec2 scaledTexCoord = scrolledTexCoord * waterScale;
+
+    vec4 diffuse = texture(diffuseTex, scaledTexCoord); 
     vec3 viewDir = normalize(cameraPos - IN.worldPos.xyz); 
 
     vec3 reflectDir = reflect(-viewDir, normalize(IN.normal)); 
@@ -58,20 +66,20 @@ void main(void)
     float depthDiff = length(fragmentWorldPos - sceneWorldPos);
     
     vec3 normal;
-    if (depthDiff >= 5.0) 
+    if (depthDiff >= 5.0 * clamp(40 - temperature, 1, 100)) 
     {  
-        fragColour[0] = (reflectTex * 0.5) + (diffuse * 0.5);
-
+        fragColour[0] = mix(reflectTex, diffuse, 0.5);
         mat3 TBN = mat3(normalize(IN.tangent), normalize(IN.binormal), normalize(IN.normal));
-        normal = texture(bumpTex, IN.texCoord).rgb * 2.0 - 0.5;
+        normal = texture(bumpTex, scaledTexCoord).rgb * 2.0 - 1;
         normal = normalize(TBN * normal);
-
-        normal += vec3(1,1,1);
-
-    } else 
+    } 
+    else 
     {
-         fragColour[0]  = vec4(1.0, 1.0, 1.0, 1.0);     
-         normal = vec3(1,1,1);
+        vec4 diffuse = texture(iceTex,  IN.texCoord * waterScale); 
+        fragColour[0] = mix(reflectTex, diffuse, 0.25);
+        mat3 TBN = mat3(normalize(IN.tangent), normalize(IN.binormal), normalize(IN.normal));
+        normal = texture(iceTexBump,  IN.texCoord * waterScale).rgb * 2.0 - 1;
+        normal = normalize(TBN * normal);
     }
 
            

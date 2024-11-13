@@ -9,8 +9,6 @@ in Vertex {
 } IN;
 
 out vec4 fragColour;
-const float scaleFactors[7] = float[](0.006, 0.061, 0.242, 0.383, 0.242, 0.061, 0.006);
-
 
 void main(void) {
 

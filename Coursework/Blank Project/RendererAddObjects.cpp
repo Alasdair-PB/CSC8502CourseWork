@@ -91,12 +91,17 @@ bool Renderer::SetTree(SceneNode* root)
 bool Renderer::SetWater(SceneNode* root)
 {
 	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "water.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0));
+	GLuint* newIceTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Ice_03_basecolor.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	GLuint* newBumpTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "waterbump.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	GLuint* newIceBumpTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Ice_03_normal.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+
 	Shader* waterShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl", "", "TessellationQuadControl.glsl", "waterTessEvaluation.glsl");
-	//Shader* waterShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl", "", "TessellationControl.glsl", "TessellationEvaluation.glsl");
 
 	SetTextureRepeating(*newTexture, true);
 	SetTextureRepeating(*newBumpTexture, true);
+	SetTextureRepeating(*newIceTexture, true);
+	SetTextureRepeating(*newIceBumpTexture, true);
+
 
 	if (!waterShader->LoadSuccess())
 		return false;
@@ -105,7 +110,7 @@ bool Renderer::SetWater(SceneNode* root)
 	texture.push_back(newBumpTexture);
 	shader.emplace_back(waterShader);
 
-	Water* water = new Water(*newTexture, *newBumpTexture, mapSize.x);
+	Water* water = new Water(*newTexture, *newBumpTexture, *newIceTexture, *newIceBumpTexture, mapSize.x);
 	water->SetShader(waterShader);
 
 	root->AddChild(water);

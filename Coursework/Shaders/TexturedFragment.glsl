@@ -1,7 +1,6 @@
 #version 330 core
 
 uniform sampler2D diffuseTex;  
-uniform sampler2D icicleMask;  
 uniform vec3 cameraPos;   
 
 in Vertex {

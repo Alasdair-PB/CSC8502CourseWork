@@ -31,7 +31,7 @@ protected:
 	void UpdateFrameTime(float dt);
 	void UpdateRunner();
 
-	void SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFalg, Material::WorldValue val, GLint location);
+	void SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFalg, int* index, Material::WorldValue val, GLint location);
 	void DepthBufferWrite();
 	void DeferredBufferWrite();
 

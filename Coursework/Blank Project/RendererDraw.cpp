@@ -22,85 +22,87 @@ void Renderer::DrawNode(SceneNode* n) {
 		bool faceCulling = true;
 		bool tessFalg = false;
 
-		if (material)
-		{
-			const auto& propertyMaps = material->GetProperties();
+		if (!material)
+			return;
+		
+		const auto& propertyMaps = material->GetProperties();
+		int index = 0;
 
-			for (const auto& propertyMap : propertyMaps) {
-				for (const auto& [outerKey, innerMap] : propertyMap) {
-					for (const auto& [innerKey, value] : innerMap) {
-						int index = 0;
-						std::visit([&](auto&& val) {
-							using T = std::decay_t<decltype(val)>;
-							GLint location = glGetUniformLocation(currentShader->GetProgram(), innerKey.c_str());
+		for (const auto& propertyMap : propertyMaps) {
+			for (const auto& [outerKey, innerMap] : propertyMap) {
+				for (const auto& [innerKey, value] : innerMap) {
+					std::visit([&](auto&& val) {
+						using T = std::decay_t<decltype(val)>;
+						GLint location = glGetUniformLocation(currentShader->GetProgram(), innerKey.c_str());
 
-							if constexpr (std::is_same_v<T, GLuint>)
+						if constexpr (std::is_same_v<T, GLuint>)
+						{
+							glActiveTexture(GL_TEXTURE0 + index);
+							glBindTexture(GL_TEXTURE_2D, val);
+							glUniform1i(location, index);
+							index++;
+						}
+						else if constexpr (std::is_same_v<T, Vector4>)
+						{
+							glUniform4fv(location, 1, reinterpret_cast<const float*>(&val));
+						}
+						else if constexpr (std::is_same_v<T, Vector3>)
+						{
+							glUniform3fv(location, 1, reinterpret_cast<const float*>(&val));
+						}
+						else if constexpr (std::is_same_v<T, Matrix4>)
+						{
+							glUniformMatrix4fv(location, 1, false, val.values);
+						}
+						else if constexpr (std::is_same_v<T, MeshAnimation*>)
+						{
+							Mesh* myMesh = n->GetMesh();
+
+							while (frameTime < 0.0f)
+							{
+								int lastCurrentFrame = currentFrame + 1;
+								currentFrame = lastCurrentFrame % val->GetFrameCount();
+								frameTime += 1.0f / val->GetFrameRate();
+							}
+							vector <Matrix4> frameMatrices;
+							const Matrix4* invBindPose = myMesh->GetInverseBindPose();
+							const Matrix4* frameData = val->GetJointData(currentFrame);
+
+							for (unsigned int i = 0; i < myMesh->GetJointCount(); ++i) {
+								frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
+							}
+							int j = glGetUniformLocation(currentShader->GetProgram(), "joints");
+							glUniformMatrix4fv(j, frameMatrices.size(), false, (float*)frameMatrices.data());
+						}
+						else if constexpr (std::is_same_v<T, int>)
+						{
+							glUniform1i(location, val);
+						}
+						else if constexpr (std::is_same_v<T, float>)
+						{
+							glUniform1f(location, val);
+						}
+						else if constexpr (std::is_same_v<T, std::vector<GLuint>>)
+						{
+							Mesh* myMesh = n->GetMesh();
+							glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), index);
+							for (int i = 0; i < myMesh->GetSubMeshCount(); ++i)
 							{
 								glActiveTexture(GL_TEXTURE0 + index);
-								glBindTexture(GL_TEXTURE_2D, val);
-								glUniform1i(location, index);
+								glBindTexture(GL_TEXTURE_2D, val[i]);
+								myMesh->DrawSubMesh(i);
 							}
-							else if constexpr (std::is_same_v<T, Vector4>)
-							{
-								glUniform4fv(location, 1, reinterpret_cast<const float*>(&val));
-							}
-							else if constexpr (std::is_same_v<T, Vector3>)
-							{
-								glUniform3fv(location, 1, reinterpret_cast<const float*>(&val));
-							}
-							else if constexpr (std::is_same_v<T, Matrix4>)
-							{
-								glUniformMatrix4fv(location, 1, false, val.values);
-							}
-							else if constexpr (std::is_same_v<T, MeshAnimation*>)
-							{
-								Mesh* myMesh = n->GetMesh();
-
-								while (frameTime < 0.0f)
-								{
-									int lastCurrentFrame = currentFrame + 1;
-									currentFrame = lastCurrentFrame % val->GetFrameCount();
-									frameTime += 1.0f / val->GetFrameRate();
-								}
-								vector <Matrix4> frameMatrices;
-								const Matrix4* invBindPose = myMesh->GetInverseBindPose();
-								const Matrix4* frameData = val->GetJointData(currentFrame);
-
-								for (unsigned int i = 0; i < myMesh->GetJointCount(); ++i) {
-									frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
-								}
-								int j = glGetUniformLocation(currentShader->GetProgram(), "joints");
-								glUniformMatrix4fv(j, frameMatrices.size(), false, (float*)frameMatrices.data());
-							}
-							else if constexpr (std::is_same_v<T, int>)
-							{
-								glUniform1i(location, val);
-							}
-							else if constexpr (std::is_same_v<T, float>)
-							{
-								glUniform1f(location, val);
-							}
-							else if constexpr (std::is_same_v<T, std::vector<GLuint>>)
-							{
-								Mesh* myMesh = n->GetMesh();
-								glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
-
-								for (int i = 0; i < myMesh->GetSubMeshCount(); ++i)
-								{
-									glActiveTexture(GL_TEXTURE0);
-									glBindTexture(GL_TEXTURE_2D, val[i]);
-									myMesh->DrawSubMesh(i);
-								}
-							}
-							else if constexpr (std::is_same_v<T, Material::WorldValue>)
-							{
-								SetWorldValues(&renderFlag, &faceCulling, &tessFalg, val, location);
-							}
-							}, value);
-					}
+							index++;
+						}
+						else if constexpr (std::is_same_v<T, Material::WorldValue>)
+						{
+							SetWorldValues(&renderFlag, &faceCulling, &tessFalg, &index, val, location);
+						}
+						}, value);
 				}
 			}
 		}
+		
 		// No longer used
 		if (renderFlag) {
 
@@ -123,16 +125,17 @@ void Renderer::DrawNode(SceneNode* n) {
 }
 
 
-void Renderer::SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFalg, Material::WorldValue val, GLint location)
+void Renderer::SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFalg, int* index, Material::WorldValue val, GLint location)
 {
 	switch (val) {
 		case Material::CameraPosition:
 			glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 			break;
 		case Material::CubeMap:
-			glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 2);
-			glActiveTexture(GL_TEXTURE2);
+			glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), *index);
+			glActiveTexture(GL_TEXTURE0 + *index);
 			glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+			*index += 1;
 			break;
 		case Material::FarPlane:
 			glUniform1f(location, 15000.0f);
@@ -168,9 +171,10 @@ void Renderer::SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFal
 			break;
 
 		case Material::DepthTexture:
-			glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), 3);
-			glActiveTexture(GL_TEXTURE3);
+			glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "depthTex"), *index);
+			glActiveTexture(GL_TEXTURE0 + *index);
 			glBindTexture(GL_TEXTURE_2D, depthTex);
+			*index += 1;
 
 			break;
 		case Material::LightRender:

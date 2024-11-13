@@ -1,7 +1,8 @@
 #include "Renderer.h"
+#include <algorithm>
+
 #include "../nclgl/Camera.h"
 #include "../nclgl/Light.h"
-#include <algorithm>
 #include "../nclgl/Pathing.h"
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent)

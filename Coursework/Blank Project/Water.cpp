@@ -1,6 +1,6 @@
 #include "Water.h"
 
-Water::Water(GLuint texture, GLuint bumpTex, float hSize)
+Water::Water(GLuint texture, GLuint bumpTex, GLuint iceTex, GLuint iceTexBump, float hSize)
 	
 {
 	quad = Mesh::GenerateQuad();
@@ -10,7 +10,12 @@ Water::Water(GLuint texture, GLuint bumpTex, float hSize)
 	SetColour(Vector4(0, 0, 1, 0.5f));
 
 	GetMaterial()->AddProperty("diffuseTex", texture);
+	GetMaterial()->AddProperty("iceTex", iceTex);
+	GetMaterial()->AddProperty("iceTexBump", iceTexBump);
 	GetMaterial()->AddProperty("bumpTex", bumpTex);
+	GetMaterial()->AddProperty("cubeMap", Material::CubeMap);
+	GetMaterial()->AddProperty("depthTex", Material::DepthTexture);
+
 	GetMaterial()->AddProperty("transparency", 0.8f);
 	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
 	GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
@@ -24,8 +29,6 @@ Water::Water(GLuint texture, GLuint bumpTex, float hSize)
 	GetMaterial()->AddProperty("dt", Material::DeltaTime);
 
 	GetMaterial()->AddProperty("cameraPos", Material::CameraPosition);
-	GetMaterial()->AddProperty("cubeMap", Material::CubeMap);
-	GetMaterial()->AddProperty("depthTex", Material::DepthTexture);
 
 	SetTransform(Matrix4::Translation(Vector3(hSize * 0.5f, 100, hSize * 0.5f)) * Matrix4::Rotation(270.0f, Vector3(1, 0, 0)));
 	SetBoundingRadius(15.0f);	
