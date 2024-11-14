@@ -1,38 +1,44 @@
 #version 330 core
 
-uniform sampler2D diffuseTex;
+uniform sampler2D diffuseTex;      
+uniform sampler2D depthTex;   
+
+uniform float fogDensity;   
+uniform vec3 fogColor;     
+uniform vec3 cameraPos;
+uniform mat4 projMatrix;           
+uniform mat4 inverseProjView;          
 
 in Vertex {
-	vec2 texCoord;
+    vec2 texCoord;
 } IN;
 
 out vec4 fragColour;
-//const float scaleFactors[7] = float[](0.006, 0.061, 0.242, 0.383, 0.242, 0.061, 0.006);
 
-void main(void) 
+void main(void)
 {
+    float depth = texture(depthTex, IN.texCoord).r;
+    vec3 ndcPos = vec3(IN.texCoord, depth) * 2.0 - 1.0;
+
+    vec4 invClipPos = inverseProjView * vec4(ndcPos, 1.0);
+    vec3 worldPos = invClipPos.xyz / invClipPos.w;
+    float distance = length(cameraPos - worldPos);
+
+
+
     vec4 diffuse = texture(diffuseTex, IN.texCoord);
 
+    vec4 finalColor = vec4(diffuse.rgb,1);
 
-	/*fragColour = vec4(0, 0, 0, 1);
-	vec2 delta = vec2(0, 0);
+    if (distance > 4000){
+        finalColor.xyz *= fogColor;
+    }
 
-	delta = dFdy(IN.texCoord);
-	
-	for (int i = 0; i < 7; i++) 
-	{
-		vec2 offset = delta * (i - 3);
-		vec4 tmp = texture2D(diffuseTex, IN.texCoord.xy + offset);
-		fragColour += tmp * scaleFactors[i];
-	}*/
+    fragColour = finalColor;
 
 
-
-
-
-
-	if (diffuse.xyz == vec3(0,1,0))
+    if (diffuse.xyz == vec3(0,1,0))
 		fragColour.a = 0;
-	else
-		fragColour = diffuse;
+
+
 }

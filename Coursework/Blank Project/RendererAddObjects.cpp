@@ -4,6 +4,10 @@
 #include "Water.h"
 #include "Leaves.h"
 #include "Trunk.h"
+#include "Rock.h"
+
+#include "Foliage.h"
+
 #include "FPSCharacter.h"
 
 
@@ -15,16 +19,14 @@ bool Renderer::SetTerrain(SceneNode* root)
 	//GLuint* newGrassTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	//GLuint* newGrassBumpTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
-	//GLuint* newSnowTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	//GLuint* newSnowBumpTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	GLuint* newSnowTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "TexturesCom_Snow_A.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	GLuint* newSnowBumpTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "TexturesCom_Snow_N.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
 	if (!newTexture || !newBumpTexture)
 		return false;
 
 	SetTextureRepeating(*newTexture, true);
 	SetTextureRepeating(*newBumpTexture, true);
-
-	//Shader* newTerrainShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl");
 	Shader* newTerrainShader = new Shader("shadowscenevert.glsl", "shadowscenefrag.glsl");
 
 
@@ -38,7 +40,12 @@ bool Renderer::SetTerrain(SceneNode* root)
 	Terrain* terrain = new Terrain(*newTexture, *newBumpTexture);
 	terrain->SetShader(newTerrainShader);
 
-	mapSize = terrain->GetMapSize();
+	HeightMap* heightMap = new HeightMap(TEXTUREDIR "noise.png");
+	mapSize = heightMap->GetHeightmapSize();
+	terrain->SetMesh(heightMap);
+	this->heightMap = heightMap;
+	mapSize = this->heightMap->GetHeightmapSize();
+
 	root->AddChild(terrain);
 
 	return true;
@@ -66,24 +73,109 @@ bool Renderer::SetFPSCharacter(SceneNode* root)
 	return true;
 }
 
+
+void Renderer::SetNodePosition(SceneNode** node, size_t count) {
+	Vector3 point = Vector3(rand() % (int)mapSize.x, 250.0f, rand() % (int)mapSize.x);
+	Vector3* hitPos = new Vector3();
+	Vector3* planeDir = new Vector3();
+	float distance = 300;
+
+	if (heightMap->RayMeshIntersect(point, Vector3(0, -1, 0), hitPos, planeDir, distance)) {
+		Vector3 up = *planeDir;
+		Vector3 forward = Vector3::Cross(Vector3(0, 1, 0), up);
+
+		if (forward.Length() < 1e-6) {
+			forward = Vector3::Cross(Vector3(1, 0, 0), up);
+		}
+		forward.Normalise();
+		Vector3 right = Vector3::Cross(up, forward);
+		Matrix4 rot = Matrix4::FromAxes(right, up, -forward);
+
+		for (int i = 0; i < count; i++) {
+			node[i]->SetTransform(Matrix4::Translation(*hitPos) * rot);
+		}
+	}
+	else {
+		for (int i = 0; i < count; i++) {
+			node[i]->SetTransform(Matrix4::Translation(Vector3(mapSize.x * 0.5, 165, mapSize.x)));
+		}
+	}
+
+	delete hitPos;
+	delete planeDir;
+}
+
+
+const int foliageCount = 200;
+
+bool Renderer::SetFoliage(SceneNode* root) 
+{		
+	Shader* newShader = new Shader("TexturedVertex.glsl", "leafFragment.glsl", "WiggleGeometry.glsl");		
+	shader.emplace_back(newShader);
+
+	for (int i = 0; i < foliageCount; i++) 
+	{
+		SceneNode* grass = new Foliage();
+		grass->SetShader(newShader);
+
+		SceneNode* nodes[] = { grass };
+		SetNodePosition(nodes, 1);
+		root->AddChild(grass);
+	}		
+	return true;
+}
+
+
+bool Renderer::SetRocks(SceneNode* root)
+{		
+	Shader* newShader = new Shader("TexturedVertex.glsl", "leafFragment.glsl");		
+	shader.emplace_back(newShader);
+
+	for (int i = 0; i < foliageCount; i++)
+	{
+		SceneNode* rock = new Rock();
+		rock->SetShader(newShader);
+
+		SceneNode* nodes[] = { rock };
+		SetNodePosition(nodes, 1);
+		root->AddChild(rock);
+
+	}		
+	return true;
+}
+
+
 bool Renderer::SetTree(SceneNode* root)
 {
-	Shader* newShader = new Shader("TexturedVertex.glsl", "leafFragment.glsl", "WiggleGeometry.glsl");
+	Shader* newShader = new Shader("TexturedVertex.glsl", "leafFragment.glsl", "treeGeometry.glsl.glsl");
 	Shader* newTrunkShader = new Shader("icicleVertex.glsl", "icicleFragment.glsl", "IcicleGeometry.glsl"); //, "icicleTessControl.glsl", "icicleTessEvaluation.glsl");
+
 	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "IceOffset.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	GLuint* newIceTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Ice_03_basecolor.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	GLuint* woodTex = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Rock_07_basecolor.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	GLuint* woodBump = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Rock_07_normal.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	GLuint* iceBump = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Ice_03_normal.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
 	SetTextureRepeating(*newTexture, true);
+	SetTextureRepeating(*newIceTexture, true);
+	SetTextureRepeating(*woodTex, true);
+	SetTextureRepeating(*woodBump, true);
+	SetTextureRepeating(*iceBump, true);
 
 	texture.push_back(newTexture);
 	shader.emplace_back(newTrunkShader);
 	shader.emplace_back(newShader);
 
-	SceneNode* leaves = new Leaves(mapSize.x);
-	SceneNode* trunk = new Trunk(mapSize.x, *newTexture, *newIceTexture);
+
+
+	SceneNode* leaves = new Leaves();
+	SceneNode* trunk = new Trunk(mapSize.x, *newTexture, *newIceTexture, *woodTex, *woodBump, *iceBump);
 
 	trunk->SetShader(newTrunkShader);
 	leaves->SetShader(newShader);
+
+	SceneNode* nodes[] = { trunk, leaves };
+	SetNodePosition(nodes, 2);
 
 	root->AddChild(leaves);
 	root->AddChild(trunk);

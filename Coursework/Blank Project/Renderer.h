@@ -20,10 +20,13 @@ protected:
 	void BuildNodeLists(SceneNode* from);
 	void SortNodeLists();
 	void ClearNodeLists();
-
+	void SetNodePosition(SceneNode** nodes, size_t count);
 	bool SetTerrain(SceneNode* root);
 	bool SetWater(SceneNode* root);
 	bool SetTree(SceneNode* root);
+	bool SetFoliage(SceneNode* root);
+	bool SetRocks(SceneNode* root);
+
 	bool SetFPSCharacter(SceneNode* root);
 	bool SetCubeMap();
 
@@ -89,6 +92,8 @@ protected:
 	Shader* postProcessShader;
 	Shader* shadowScene;
 	Shader* fallBackShader;
+
+	HeightMap* heightMap;
 
 	GLuint cubeMap;
 	GLuint currentTexture;

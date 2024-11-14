@@ -580,3 +580,58 @@ bool Mesh::GetSubMesh(const string& name, const SubMesh* s) const {
 	}
 	return false;
 }
+
+bool Mesh::RayTriangleIntersect(Vector3 origin, Vector3 direction, const Vector3& v0, const Vector3& v1, const Vector3& v2, float& t) {
+	const float EPSILON = 1e-6;
+	Vector3 edge1 = v1 - v0;
+	Vector3 edge2 = v2 - v0;
+	Vector3 h = Vector3::Cross(direction, edge2);
+	float a = Vector3::Dot(edge1, h);
+
+	if (a > -EPSILON && a < EPSILON) return false;
+
+	float f = 1.0f / a;
+	Vector3 s = origin - v0;
+	float u = f * Vector3::Dot(s, h);
+
+	if (u < 0.0 || u > 1.0) return false;
+
+	Vector3 q = Vector3::Cross(s, edge1);
+	float v = f * Vector3::Dot(direction, q);
+
+	if (v < 0.0 || u + v > 1.0) return false;
+
+	t = f * Vector3::Dot(edge2, q);
+
+	return t > EPSILON;
+}
+
+bool Mesh::RayMeshIntersect(Vector3 origin, Vector3 direction, Vector3* hitPosition, Vector3* normal, float& outDistance) {
+	outDistance = FLT_MAX;
+	bool hit = false;
+	unsigned int triCount = GetTriCount();
+
+	for (unsigned int i = 0; i < triCount; ++i) {
+		unsigned int a, b, c;
+		GetVertexIndicesForTri(i, a, b, c);
+		float t;
+
+		if (RayTriangleIntersect(origin, direction, vertices[a], vertices[b], vertices[c], t)) {
+			if (t < outDistance) {
+				outDistance = t;
+				hit = true;
+				if (hitPosition) {
+					*hitPosition = origin + direction * t;
+				}
+				if (normal) {
+					Vector3 edge1 = vertices[b] - vertices[a];
+					Vector3 edge2 = vertices[c] - vertices[a];
+					Vector3 result = Vector3::Cross(edge1, edge2);
+					result.Normalise();
+					*normal = result;
+				}
+			}
+		}
+	}
+	return hit;
+}

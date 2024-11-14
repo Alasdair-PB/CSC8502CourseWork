@@ -1,7 +1,7 @@
 #include "Leaves.h"
 
 
-Leaves::Leaves(float hSize)
+Leaves::Leaves()
 {
 	SetFromSubMesh("Leaves");
 
@@ -18,7 +18,6 @@ Leaves::Leaves(float hSize)
 
 
 	SetColour(Vector4(0, 0, 0, 1));
-	SetTransform(Matrix4::Translation(Vector3(hSize * 0.5f, 165, hSize * 0.5f)));
 	SetModelScale(Vector3(25, 25, 25));
 }
 

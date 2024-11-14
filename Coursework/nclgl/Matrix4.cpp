@@ -26,6 +26,33 @@ void Matrix4::ToZero()	{
 	}
 }
 
+Matrix4 Matrix4::FromAxes(Vector3 right, Vector3 up, Vector3 forward) {
+	Matrix4 rotation;
+
+	rotation.values[0] = right.x;
+	rotation.values[1] = right.y;
+	rotation.values[2] = right.z;
+	rotation.values[3] = 0;
+
+	rotation.values[4] = up.x;
+	rotation.values[5] = up.y;
+	rotation.values[6] = up.z;
+	rotation.values[7] = 0;
+
+	rotation.values[8] = forward.x;
+	rotation.values[9] = forward.y;
+	rotation.values[10] = forward.z;
+	rotation.values[11] = 0;
+
+	rotation.values[12] = 0;
+	rotation.values[13] = 0;
+	rotation.values[14] = 0;
+	rotation.values[15] = 1;
+
+	return rotation;
+}
+
+
 Vector3 Matrix4::GetPositionVector() const{
 	return Vector3(values[12],values[13],values[14]);
 }

@@ -62,7 +62,7 @@ void main(void)
 
     float depthDiff = length(fragmentWorldPos - sceneWorldPos);
     
-    vec3 normal;
+    vec3 normal = IN.normal;
     if (depthDiff >= 5.0 * clamp(40 - temperature, 1, 100)) 
     {  
         fragColour[0] = mix(reflectTex, diffuse, 0.5);
@@ -81,5 +81,5 @@ void main(void)
     }
 
     fragColour[0].w = transparency;
-    fragColour[1] = vec4(normal * 0.5 + 0.5, 1.0);
+    fragColour[1] = vec4(IN.normal * 0.5 + 0.5, 1.0);
 }

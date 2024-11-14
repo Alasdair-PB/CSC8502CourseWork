@@ -11,56 +11,15 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	root = new SceneNode();
 
-	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root))
+	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root) || !SetFoliage(root) || !SetRocks(root))
 		return;	
 
 	Vector3 cameraPos = mapSize * Vector3(0.5f, 5.0f, 0.5f);
 	cameraPos.y = 250.0f;
-
-	//camera = new Camera(-30.0f, 315.0f, Vector3(-8.0f, 5.0f, 8.0f));
 	camera = new Camera(-45.0f, 0.0f, cameraPos);
 	camera->GetPath()->SetPathPattern(cameraPos, Vector3(800,0,0), Vector3(-800,0,0), Vector3(0,0,500), 3);
 	lastCameraPos = cameraPos;
 
-	// -------------------------------------------------------------------------------------------------
-	/*shadowScene = new Shader("shadowscenevert.glsl", "shadowscenefrag.glsl");
-
-	sphereTexture = SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	sphereBumpTexture = SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	SetTextureRepeating(sphereTexture, true);
-	SetTextureRepeating(sphereBumpTexture, true);
-
-	nextSphere = new SceneNode(Mesh::GenerateQuad(), Vector4(1, 1, 1, 1));
-
-	Vector3 offset = Vector3(mapSize.x * 0.5, 250, mapSize.x * 0.5); 
-
-	nextSphere->SetTransform(Matrix4::Translation(Vector3(0, -1, 0)) * Matrix4::Rotation(-90, Vector3(1, 0, 0)));
-	nextSphere->SetTransform(Matrix4::Translation(Vector3(0, -1, 0)) * Matrix4::Translation(offset) * Matrix4::Rotation(-90, Vector3(1, 0, 0)));
-
-	nextSphere->SetShader(shadowScene);
-	nextSphere->GetMaterial()->AddProperty("diffuseTex", sphereTexture);
-	nextSphere->GetMaterial()->AddProperty("bumpTex", sphereBumpTexture);
-	nextSphere->GetMaterial()->AddProperty("lightRender", Material::LightRender);
-	nextSphere->GetMaterial()->AddProperty("shadowMapping", Material::ShadowMap);
-	nextSphere->GetMaterial()->AddProperty("cameraPos", Material::CameraPosition);
-
-	root->AddChild(nextSphere);
-
-	nodesphere = new SceneNode(Mesh::LoadFromMeshFile("Sphere.msh"), Vector4(1, 1, 1, 1));
-
-	nodesphere->SetTransform(Matrix4::Translation(Vector3(0, 0, 0)));
-	nodesphere->SetTransform(Matrix4::Translation(Vector3(0, 0, 0)) * Matrix4::Translation(offset));
-
-	nodesphere->SetShader(shadowScene);
-	nodesphere->GetMaterial()->AddProperty("diffuseTex", sphereTexture);
-	nodesphere->GetMaterial()->AddProperty("bumpTex", sphereBumpTexture);
-	nodesphere->GetMaterial()->AddProperty("lightRender", Material::LightRender);
-	nodesphere->GetMaterial()->AddProperty("shadowMapping", Material::ShadowMap);
-	nodesphere->GetMaterial()->AddProperty("cameraPos", Material::CameraPosition);
-
-	root->AddChild(nodesphere);
-	*/
-	// -------------------------------------------------------------------------------------------------
 	SetLights();
 	SetFPSCharacter(root);
 	SetProjectionMatrix();
@@ -328,10 +287,32 @@ void Renderer::CombineBuffers()
 void Renderer::PostProcess() 
 {
 	BindShader(postProcessShader);
-	glUniform1i(glGetUniformLocation(postProcessShader->GetProgram(), "diffuseTex"), 0);
+	glDepthFunc(GL_ALWAYS);
+	glDepthMask(GL_FALSE);
+	
 	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(glGetUniformLocation(postProcessShader->GetProgram(), "diffuseTex"), 0);	
 	glBindTexture(GL_TEXTURE_2D, postPTex);
+
+	glActiveTexture(GL_TEXTURE1);
+	glUniform1i(glGetUniformLocation(postProcessShader->GetProgram(), "depthTex"), 1);
+	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
+
+	glUniform1f(glGetUniformLocation(postProcessShader->GetProgram(), "fogDensity"), 0.01f);
+	glUniform3fv(glGetUniformLocation(postProcessShader->GetProgram(), "fogColor"), 1, (float*)&Vector3(1.5, 1.5, 1.5));
+	glUniform3fv(glGetUniformLocation(pointlightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+
+
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+	camera->BuildViewMatrix();
+	Matrix4 invViewProj = (projMatrix * viewMatrix).Inverse();
+	glUniformMatrix4fv(glGetUniformLocation(postProcessShader->GetProgram(), "inverseProjView"), 1, false, invViewProj.values);
+
+	UpdateShaderMatrices();
 	skyQuad->Draw();
+
+	glDepthFunc(GL_LEQUAL);
+	glDepthMask(GL_TRUE);
 }
 
 
@@ -357,8 +338,8 @@ void Renderer::DrawPointLights() {
 	glUniform3fv(glGetUniformLocation(pointlightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 	glUniform2f(glGetUniformLocation(pointlightShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
-	Matrix4 invViewProj = (projMatrix * viewMatrix).Inverse();
 
+	Matrix4 invViewProj = (projMatrix * viewMatrix).Inverse();
 	glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "inverseProjView"), 1, false, invViewProj.values);
 
 	UpdateShaderMatrices();

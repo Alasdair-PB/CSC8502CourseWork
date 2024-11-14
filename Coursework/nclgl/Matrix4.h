@@ -39,7 +39,7 @@ public:
 
 
 	float	values[16];
-
+	static Matrix4 FromAxes(Vector3 right, Vector3 up, Vector3 forward);
 	//Set all matrix values to zero
 	void	ToZero();
 	//Sets matrix to identity matrix (1.0 down the diagonal)

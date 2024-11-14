@@ -4,7 +4,7 @@
 
 class Trunk : public MshObject {
 public:
-	Trunk(float hSize, GLuint icicleMask, GLuint iceTex);
+	Trunk(float hSize, GLuint icicleMask, GLuint iceTexture, GLuint woodTexture, GLuint woodNormal, GLuint iceBumpTex);
 
 	~Trunk(void) {
 

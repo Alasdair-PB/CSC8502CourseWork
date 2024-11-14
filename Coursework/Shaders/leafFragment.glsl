@@ -25,6 +25,7 @@ void main(void)
     //diffuse.rgb *= 1.5;
     //vec4 rimColor = vec4(fresnel, fresnel, fresnel, 1.0); 
 
+    diffuse.a= 1;
     fragColour[0] = diffuse; // + IN.colour;// +  (1-diffuse) * rimColor; 
     fragColour[1] = vec4(1);
 }

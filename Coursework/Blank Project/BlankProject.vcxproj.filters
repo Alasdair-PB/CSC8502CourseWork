@@ -29,6 +29,12 @@
     <ClCompile Include="Water.cpp">
       <Filter>WorldObjects</Filter>
     </ClCompile>
+    <ClCompile Include="Foliage.cpp">
+      <Filter>WorldObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Rock.cpp">
+      <Filter>WorldObjects</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MshObject.h" />
@@ -48,6 +54,12 @@
       <Filter>WorldObjects</Filter>
     </ClInclude>
     <ClInclude Include="Water.h">
+      <Filter>WorldObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="Foliage.h">
+      <Filter>WorldObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="Rock.h">
       <Filter>WorldObjects</Filter>
     </ClInclude>
   </ItemGroup>

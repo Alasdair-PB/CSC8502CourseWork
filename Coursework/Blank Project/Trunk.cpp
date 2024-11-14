@@ -1,13 +1,21 @@
 #include "Trunk.h"
 
-Trunk::Trunk(float hSize, GLuint icicleMask, GLuint iceTexture)
+Trunk::Trunk(float hSize, GLuint icicleMask, GLuint iceTexture, GLuint woodTexture, GLuint woodNormal, GLuint iceBumpTex)
 {	
+
+	//SetFromSubMesh("Trunk");
+	mesh = Mesh::LoadFromMeshFile("Trunk.msh");
+	SetMesh(mesh);
+
+
+	GetMaterial()->AddProperty("diffuse", woodTexture);
+	GetMaterial()->AddProperty("woodNormal", woodNormal);
 	GetMaterial()->AddProperty("icicleMask", icicleMask);
 	GetMaterial()->AddProperty("iceTex", iceTexture);
-	SetFromSubMesh("Trunk");
+	GetMaterial()->AddProperty("iceBumpTex", iceBumpTex);
+
 
 	SetColour(Vector4(0, 0, 0, 1));
-	SetTransform(Matrix4::Translation(Vector3(hSize * 0.5f, 165, hSize * 0.5f)));
 	SetModelScale(Vector3(25, 25, 25));
 
 	GetMaterial()->AddProperty("temperature", Material::Temperature);

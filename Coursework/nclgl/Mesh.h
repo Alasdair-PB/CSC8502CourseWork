@@ -67,6 +67,8 @@ public:
 	}
 
 
+	bool RayMeshIntersect(Vector3 origin, Vector3 direction, Vector3* hitPosition, Vector3* normal, float& outDistance);
+	bool RayTriangleIntersect(Vector3 origin, Vector3 direction, const Vector3& v0, const Vector3& v1, const Vector3& v2, float& t);
 	int GetIndexForJoint(const std::string& name) const;
 	int GetParentForJoint(const std::string& name) const;
 	int GetParentForJoint(int i) const;

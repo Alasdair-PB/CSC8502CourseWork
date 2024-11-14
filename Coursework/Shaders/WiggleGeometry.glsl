@@ -53,20 +53,7 @@ void main()
         float offsetX = sin(dt * wiggleFrequency + worldPos.x) * wiggleIntensity;
         float offsetY = cos(dt * wiggleFrequency + worldPos.y) * wiggleIntensity;
 
-         worldPos += vec4(offsetX, offsetY, 0.0, 0.0);        
-        
-        if (dtSeason < 10 && temperature >= 0)
-        {
-            float scaleFactor = dtSeason;   
-            worldPos.xyz = leafCenter + (worldPos.xyz - leafCenter) * (0.1 * dtSeason);
-        }
-        else if (temperature < 0 && dtSeason >= 10)
-        {
-            worldPos.y -= 50 * abs(IN[i].normal.x) * (dtSeason - 10);
-            worldPos.x += 25 * IN[i].normal.y * (dtSeason - 10);
-        }
-
-
+        worldPos += vec4(offsetX, offsetY, 0.0, 0.0);        
         gl_Position = projMatrix * viewMatrix *  worldPos;
 
 

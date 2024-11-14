@@ -10,6 +10,7 @@ public:
 	~HeightMap(void) {};
 
 	Vector3 GetHeightmapSize() const { return heightmapSize; }
+	float GetHeightAtPoint(float x, float z);
 
 protected:
 	Vector3 heightmapSize;

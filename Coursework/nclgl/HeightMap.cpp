@@ -53,3 +53,4 @@ HeightMap::HeightMap(const std::string& name) {
     heightmapSize.y = vertexScale.y * 255.0f; // each height is a byte
     heightmapSize.z = vertexScale.z * (iHeight - 1);
 }
+

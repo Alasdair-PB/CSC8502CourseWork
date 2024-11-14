@@ -2,6 +2,10 @@
 uniform sampler2D diffuseTex;
 uniform sampler2D bumpTex;
 uniform sampler2D shadowTex;
+
+uniform sampler2D snowTex;
+uniform sampler2D snowBumpTex;
+
 uniform vec4 lightColour;
 uniform vec3 lightPos;
 uniform vec3 cameraPos;
@@ -21,12 +25,26 @@ out vec4 fragColour[2];
 
 void main(void) 
 {
-    mat3 TBN = mat3(normalize(IN.tangent), normalize(IN.binormal), normalize(IN.normal));
-    vec3 normal = texture(bumpTex,  IN.texCoord).rgb * 2.0 - 1;
-    normal = normalize(TBN * normal);
-    vec4 diffuse = texture(diffuseTex,  IN.texCoord); 
-
+    vec4 diffuse;
+    bool snowCovered = IN.worldPos.y > 200;
+    vec3 normal;
     
+    if (snowCovered)
+    {        
+        diffuse = texture(snowTex,  IN.texCoord); 
+        normal = texture(snowBumpTex,  IN.texCoord).rgb * 2.0 - 1;
+    }
+    else
+    {
+        diffuse = texture(diffuseTex,  IN.texCoord); 
+        normal = texture(bumpTex,  IN.texCoord).rgb * 2.0 - 1;
+    }
+        
+
+
+    mat3 TBN = mat3(normalize(IN.tangent), normalize(IN.binormal), normalize(IN.normal));
+    normal = normalize(TBN * normal);
+
     float shadow = 1.0; 
     vec3 shadowNDC = IN.shadowProj.xyz / IN.shadowProj.w;
     

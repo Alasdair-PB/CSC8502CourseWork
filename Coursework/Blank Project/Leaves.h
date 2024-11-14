@@ -5,7 +5,7 @@
 
 class Leaves : public MshObject {
 public:
-	Leaves(float hSize);
+	Leaves();
 
 	~Leaves(void) {
 
