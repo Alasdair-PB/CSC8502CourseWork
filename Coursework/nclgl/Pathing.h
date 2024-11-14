@@ -26,7 +26,7 @@ class Pathing
 	public:
 		Pathing() 
 		{
-			followingPath = false;
+			followingPath = true;
 			bezierT = 0.0f;
 			currentCurveIndex = 0;
 			bezierSpeed = 0.1f;
@@ -76,20 +76,35 @@ class Pathing
 
 			while (bezierT > 1.0f) {
 				bezierT -= 1.0f;
-				currentCurveIndex++;
+				currentCurveIndex += reverse ? -1 : 1;
 
-				if (currentCurveIndex >= bezierPath.size()) {
-					followingPath = false;
-					return bezierPath.back().GetPoint(1.0f);
+				if (currentCurveIndex < 0 || currentCurveIndex >= bezierPath.size()) {
+					reverse = !reverse;
+					currentCurveIndex = reverse ? bezierPath.size() - 1 : 0;
+					return bezierPath[currentCurveIndex].GetPoint(reverse ? 1.0f : 0.0f);
 				}
 			}
 			return bezierPath[currentCurveIndex].GetPoint(bezierT);
 		}
 
+		void SetPathing(bool state) {
+			if (followingPath != state) {
+				followingPath = state;
+				followingPath = false;
+			}
+
+			if (followingPath = true) 
+			{
+				bezierT = 0;
+				currentCurveIndex = 0;
+			}
+		}
+
+
 
 	protected:
 	
-
+		bool reverse = false;
 		std::vector <BezierCurve> bezierPath;
 		bool followingPath = true;
 		float bezierT = 0.0f;

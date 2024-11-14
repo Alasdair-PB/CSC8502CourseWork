@@ -279,7 +279,7 @@ void Renderer::SetLights()
 			150.0f,
 			rand() % (int)mapSize.z));
 
-		l.SetColour(Vector4(1,1,1,1));
+		l.SetColour(Vector4(0.6, 0.7, 1.0, 1.0));
 		l.SetRadius(500.0f + (rand() % 250));
 	}
 }

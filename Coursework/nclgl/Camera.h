@@ -36,6 +36,8 @@ public:
 	float GetPitch() const { return pitch; }
 	void SetPitch(float p) { pitch = p; }
 
+	void SetTrack(bool state) { path->SetPathing(state);}
+
 	float GetFarPlane() const { return farPlane; }
 	void SetFarPlane(float val) { farPlane = val; }
 

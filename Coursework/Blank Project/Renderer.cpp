@@ -70,6 +70,19 @@ void Renderer::UpdateScene(float dt)
 	root->Update(dt, camera->GetPosition());
 }
 
+
+Vector4 Mix(const Vector4& color1, const Vector4& color2, float ratio)
+{
+	ratio = std::clamp(ratio, 0.0f, 1.0f);
+	return Vector4(
+		color1.x * (1 - ratio) + color2.x * ratio,
+		color1.y * (1 - ratio) + color2.y * ratio,
+		color1.z * (1 - ratio) + color2.z * ratio,
+		color1.w * (1 - ratio) + color2.w * ratio
+	);
+}
+
+
 void Renderer::UpdateTemperature(float dt) 
 {	
 	this->dt += dt;
@@ -94,9 +107,20 @@ void Renderer::UpdateTemperature(float dt)
 	if (Window::GetKeyboard()->KeyDown(KEYBOARD_2))
 		nextTemperature -= 0.3f;
 
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_3))
+		camera->SetTrack(false);
+
 	if ((nextTemperature < 0 && temperature > 0) || (nextTemperature > 0 && temperature < 0))
 		this->dtSeason = 0;
 	this->temperature = nextTemperature;
+
+	float frozen = abs(abs(std::clamp(temperature - 10.0, -20.0, 0.0))) / 20;
+
+	for (int i = 0; i < LIGHT_NUM; ++i) 
+	{
+		Light& l = pointLights[i];
+		l.SetColour(Mix(Vector4(1.0, 0.6, 0.2, 1.0), Vector4(0.6, 0.7, 1.0, 1.0), frozen));
+	}
 }
 
 
@@ -197,7 +221,7 @@ void Renderer::RenderScene()
 	DeferredBufferWrite();
 	DrawPointLights();
 
-
+	DrawNodes();
 	CombineBuffers();
 	PostProcess();
 
