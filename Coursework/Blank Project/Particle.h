@@ -32,7 +32,7 @@ class ParticleManager
 
         ~ParticleManager(void) 
         {
-            delete shader;
+            //delete shader;
             glDeleteTextures(1, texture);
         }
 

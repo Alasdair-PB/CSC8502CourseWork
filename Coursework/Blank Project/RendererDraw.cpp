@@ -1,5 +1,7 @@
 #include "Renderer.h"
 #include "../nclgl/Material.h"
+#include "../nclgl/Light.h"
+
 #include "../nclgl/MeshAnimation.h"
 
 void Renderer::DrawNodeWithFallBack(SceneNode* n, Shader* shader)
@@ -119,6 +121,8 @@ void Renderer::DrawNode(SceneNode* n)
 			}
 		}
 
+
+
 		if (faceCulling == false)
 				glDisable(GL_CULL_FACE);
 
@@ -128,7 +132,7 @@ void Renderer::DrawNode(SceneNode* n)
 			glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false, model.values);
 
 			if (renderFlag)
-				SetShaderLight(*light);
+				SetShaderLight(pointLights[0]);
 
 			if (tessFalg)
 				n->Draw(*this, GL_PATCHES);

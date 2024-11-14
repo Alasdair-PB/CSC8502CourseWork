@@ -76,8 +76,6 @@ protected:
 	SceneNode* root;
 	SceneNode* runningGuy;
 	Camera* camera;	
-	Light* light;
-
 	ParticleManager particleManager;
 
 	const int LIGHT_NUM = 32;

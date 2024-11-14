@@ -9,6 +9,7 @@ Terrain::Terrain(GLuint* texture, GLuint* textureBump, GLuint* snowTex, GLuint* 
 	GetMaterial()->AddProperty("bumpTex", textureBump);
 	GetMaterial()->AddProperty("snowTex", snowTex);
 	GetMaterial()->AddProperty("snowBumpTex", snowBump);
+	GetMaterial()->AddProperty("camPos", Material::CameraPosition);
 
 	GetMaterial()->AddProperty("lightRender", Material::LightRender);
 	GetMaterial()->AddProperty("shadowMapping", Material::ShadowMap);
