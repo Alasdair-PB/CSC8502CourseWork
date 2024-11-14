@@ -62,6 +62,7 @@
     <ClInclude Include="Rock.h">
       <Filter>WorldObjects</Filter>
     </ClInclude>
+    <ClInclude Include="Particle.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Renderer">

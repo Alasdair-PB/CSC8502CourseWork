@@ -154,6 +154,7 @@
   <ItemGroup>
     <ClInclude Include="Foliage.h" />
     <ClInclude Include="FPSCharacter.h" />
+    <ClInclude Include="Particle.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="MshObject.h" />
     <ClInclude Include="Rock.h" />

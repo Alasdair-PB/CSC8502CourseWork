@@ -18,8 +18,8 @@ void main(void)
     vec3 specular = texture(specularLight, IN.texCoord).xyz;
     vec3 light = texture(diffuseLight, IN.texCoord).xyz;
 
-    fragColour.xyz = diffuse;// * 0.1; 
-    //fragColour.xyz += diffuse * light;
+    fragColour.xyz = diffuse * 0.1; 
+    fragColour.xyz += diffuse * light;
     fragColour.xyz += specular;
 
     // Green screen

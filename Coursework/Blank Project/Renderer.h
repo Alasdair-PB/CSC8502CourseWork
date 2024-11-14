@@ -3,6 +3,8 @@
 #include "../nclgl/Camera.h"
 #include "../nclgl/SceneNode.h"
 #include "../nclgl/HeightMap.h"
+#include "Particle.h"
+
 
 
 class Camera;
@@ -41,6 +43,7 @@ protected:
 	void ShadowBufferWrite();
 
 	void DrawSkybox();
+	void DrawParticles();
 	void DrawNodes();
 	void DrawDepthNodes(Shader* shader);
 	void DrawNodeWithFallBack(SceneNode* n, Shader* shader);
@@ -72,6 +75,8 @@ protected:
 	SceneNode* runningGuy;
 	Camera* camera;	
 	Light* light;
+
+	ParticleManager particleManager;
 
 	const int LIGHT_NUM = 32;
 	const int foliageCount = 300;

@@ -1,14 +1,14 @@
 #include "Rock.h"
 
 
-Rock::Rock(Matrix4* offsets)
+Rock::Rock(Matrix4* offsets, GLuint* rockBump)
 {
 
 	SetFromSubMesh("RockAfbx");
 	GetMaterial()->AddProperty("batch", offsets);
+	GetMaterial()->AddProperty("rockBump", rockBump);
 
 	GetMaterial()->AddProperty("cameraPosition", Material::CameraPosition);
-	GetMaterial()->AddProperty("faceCullOff", Material::DualFace);
 	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
 	GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
 	GetMaterial()->AddProperty("batchSize", Material::BatchSize100);

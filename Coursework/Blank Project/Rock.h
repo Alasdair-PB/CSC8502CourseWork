@@ -5,7 +5,7 @@
 
 class Rock : public MshObject {
 public:
-	Rock(Matrix4* offsets);
+	Rock(Matrix4* offsets, GLuint* rockBump);
 
 	~Rock(void) {
 

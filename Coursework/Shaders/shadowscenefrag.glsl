@@ -26,7 +26,7 @@ out vec4 fragColour[2];
 void main(void) 
 {
     vec4 diffuse;
-    bool snowCovered = IN.worldPos.y > 200;
+    bool snowCovered = IN.worldPos.y > 150;
     vec3 normal;
     
     if (snowCovered)
@@ -39,13 +39,11 @@ void main(void)
         diffuse = texture(diffuseTex,  IN.texCoord); 
         normal = texture(bumpTex,  IN.texCoord).rgb * 2.0 - 1;
     }
-        
-
 
     mat3 TBN = mat3(normalize(IN.tangent), normalize(IN.binormal), normalize(IN.normal));
     normal = normalize(TBN * normal);
 
-    float shadow = 1.0; 
+    float shadow = 1; 
     vec3 shadowNDC = IN.shadowProj.xyz / IN.shadowProj.w;
     
     if (abs(shadowNDC.x) < 1.0f && abs(shadowNDC.y) < 1.0f && abs(shadowNDC.z) < 1.0f) {
@@ -53,7 +51,7 @@ void main(void)
         float shadowZ = texture(shadowTex, biasCoord.xy).x;
         
         if (shadowZ < biasCoord.z) 
-            shadow = 0.0f;
+            shadow = 0.4f;
     }
 
     fragColour[0].rgb = diffuse.rgb;

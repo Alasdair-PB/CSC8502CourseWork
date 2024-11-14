@@ -1,12 +1,15 @@
 #include "Terrain.h"
 #include "../nclgl/HeightMap.h"
 
-Terrain::Terrain(GLuint* texture, GLuint* textureBump)
+Terrain::Terrain(GLuint* texture, GLuint* textureBump, GLuint* snowTex, GLuint* snowBump)
 {
 	SetColour(Vector4(0, 0, 0, 1)); // Not transparent
 
 	GetMaterial()->AddProperty("diffuseTex", texture);
 	GetMaterial()->AddProperty("bumpTex", textureBump);
+	GetMaterial()->AddProperty("snowTex", snowTex);
+	GetMaterial()->AddProperty("snowBumpTex", snowBump);
+
 	GetMaterial()->AddProperty("lightRender", Material::LightRender);
 	GetMaterial()->AddProperty("shadowMapping", Material::ShadowMap);
 

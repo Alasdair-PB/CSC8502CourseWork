@@ -15,6 +15,13 @@ in Vertex {
 
 out vec4 fragColour;
 
+float getLinearDepth(float depthSample) 
+{
+    float near = 0.1;
+    float far = 15000.0;
+    return (2.0 * near) / (far + near - depthSample * (far - near));
+}
+
 void main(void)
 {
     float depth = texture(depthTex, IN.texCoord).r;
@@ -25,20 +32,17 @@ void main(void)
     float distance = length(cameraPos - worldPos);
 
 
+    float linearDepth = getLinearDepth(depth);
+
+    float fogFactor = exp(-pow(linearDepth * fogDensity, 2.0));
+    fogFactor = clamp(fogFactor, 0.0, 1.0);
 
     vec4 diffuse = texture(diffuseTex, IN.texCoord);
-
     vec4 finalColor = vec4(diffuse.rgb,1);
-
-    if (distance > 4000){
-        finalColor.xyz *= fogColor;
-    }
-
+    
+    finalColor.xyz = (finalColor.xyz * (1 - fogFactor)) + (fogColor * fogFactor);
     fragColour = finalColor;
-
 
     if (diffuse.xyz == vec3(0,1,0))
 		fragColour.a = 0;
-
-
 }

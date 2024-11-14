@@ -27,6 +27,8 @@ bool Renderer::SetTerrain(SceneNode* root)
 
 	SetTextureRepeating(*newTexture, true);
 	SetTextureRepeating(*newBumpTexture, true);
+	SetTextureRepeating(*newSnowTexture, true);
+	SetTextureRepeating(*newSnowBumpTexture, true);
 	Shader* newTerrainShader = new Shader("shadowscenevert.glsl", "shadowscenefrag.glsl");
 
 
@@ -37,7 +39,7 @@ bool Renderer::SetTerrain(SceneNode* root)
 	if (!newTerrainShader->LoadSuccess()) 
 		return false;
 
-	Terrain* terrain = new Terrain(newTexture, newBumpTexture);
+	Terrain* terrain = new Terrain(newTexture, newBumpTexture, newSnowTexture, newSnowBumpTexture);
 	terrain->SetShader(newTerrainShader);
 
 	HeightMap* heightMap = new HeightMap(TEXTUREDIR "noise.png");
@@ -162,10 +164,13 @@ bool Renderer::SetFoliage(SceneNode* root)
 
 bool Renderer::SetRocks(SceneNode* root)
 {		
-	Shader* newShader = new Shader("TexturedVertex.glsl", "leafFragment.glsl");		
+	Shader* newShader = new Shader("TexturedVertex.glsl", "rockFragment.glsl");		
 	shader.emplace_back(newShader);
 
-	SceneNode* rock = new Rock(GetNodePositions(foliageCount, true));
+	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Rock_02_normal.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	SetTextureRepeating(*newTexture, true);
+
+	SceneNode* rock = new Rock(GetNodePositions(foliageCount, true), newTexture);
 	rock->SetShader(newShader);
 	root->AddChild(rock);
 	
@@ -265,7 +270,8 @@ void Renderer::SetLights()
 
 	Vector3 offset = Vector3(mapSize.x * 0.5, 100, mapSize.x * 0.5); //Vector3(0, 0, 0); // 
 	light = new Light(Vector3(-20.0f, 10.0f, -20.0f), Vector4(1, 1, 1, 1), 250.0f);
-	light->SetPosition(Vector3(-20.0f, 0, -20.0f) + offset);
+
+	light->SetPosition(Vector3(-20.0f, 120, -20.0f) + offset);
 
 	for (int i = 0; i < LIGHT_NUM; ++i) {
 		Light& l = pointLights[i];
@@ -273,10 +279,7 @@ void Renderer::SetLights()
 			150.0f,
 			rand() % (int)mapSize.z));
 
-		l.SetColour(Vector4(0.5f + (float)(rand() / (float)RAND_MAX),
-			0.5f + (float)(rand() / (float)RAND_MAX),
-			0.5f + (float)(rand() / (float)RAND_MAX),
-			1));
+		l.SetColour(Vector4(1,1,1,1));
 		l.SetRadius(1500.0f + (rand() % 250));
 	}
 }

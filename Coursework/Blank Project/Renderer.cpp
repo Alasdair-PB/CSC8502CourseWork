@@ -4,6 +4,7 @@
 #include "../nclgl/Camera.h"
 #include "../nclgl/Light.h"
 #include "../nclgl/Pathing.h"
+#include "Particle.h"
 
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent)
@@ -19,10 +20,15 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	camera->GetPath()->SetPathPattern(cameraPos, Vector3(800,0,0), Vector3(-800,0,0), Vector3(0,0,500), 3);
 	lastCameraPos = cameraPos;
 
+	GLuint* particleTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Rock_02_normal.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	Shader* particleShader = new Shader("particleVertex.glsl", "particleFragment.glsl");
+
+	particleManager = ParticleManager(Vector3(mapSize.x * 0.5,165, mapSize.x * 0.5), particleTexture, particleShader);
+
 	SetLights();
 	SetFPSCharacter(root);
 	SetProjectionMatrix();
-	this->temperature = -10.0f;
+	this->temperature = 100.0f;
 	this->dt = 0;
 	this->dtSeason = 0;
 	this->currentFrame = 0;
@@ -54,6 +60,8 @@ void Renderer::UpdateScene(float dt)
 	UpdateTemperature(dt);
 	camera->UpdateCamera(dt);
 
+
+
 	UpdateRunner();
 	viewMatrix = camera->BuildViewMatrix();
 	SetProjectionMatrix();
@@ -61,10 +69,18 @@ void Renderer::UpdateScene(float dt)
 }
 
 void Renderer::UpdateTemperature(float dt) 
-{
+{	
+	float nextTemperature = this->temperature;
+	float deltaTemperature = 0.1f;
+
+	float minTemperature = -40.0f;
+	float maxTemperature = 60.0f;
+	float t = (temperature - minTemperature) / (maxTemperature - minTemperature);
+	nextTemperature = minTemperature * (1 - t) + maxTemperature * t;
+
 	this->dt += dt;
 	this->dtSeason += dt;
-	float nextTemperature = this->temperature;
+	particleManager.UpdateParticles(dt);
 
 	if (Window::GetKeyboard()->KeyDown(KEYBOARD_1))
 		nextTemperature += 0.3f;
@@ -127,12 +143,15 @@ void Renderer::ShadowBufferWrite()
 	glViewport(0, 0, SHADOWSIZE, SHADOWSIZE);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
+
+
 	Vector3 terrainCenter = Vector3(mapSize.x * 0.5f, 0.0f, mapSize.x * 0.5f);
 	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), terrainCenter);
 	viewMatrix = viewMatrix * Matrix4::Rotation(45, Vector3(0, 1, 0)) * Matrix4::Translation(Vector3(-mapSize.x * 0.5f, 0.0f, mapSize.x * 0.75f));
 	float orthoSize = mapSize.x * 0.5f;
 	projMatrix = Matrix4::Orthographic(-orthoSize, orthoSize, -orthoSize, orthoSize, 100.00f, 4200.0f);
 	shadowMatrix = projMatrix * viewMatrix;
+
 
 	BindShader(fallBackShader);
 	DrawDepthNodes(fallBackShader);
@@ -165,14 +184,46 @@ void Renderer::RenderScene()
 
 	DepthBufferWrite();	
 	ShadowBufferWrite();
+
 	DrawSkybox();
+	DrawParticles();
+
 
 	DeferredBufferWrite();
 	DrawPointLights();
+
+
 	CombineBuffers();
 	PostProcess();
 
 	ClearNodeLists();
+}
+
+void Renderer::DrawParticles() 
+{
+	Shader* particleShader = particleManager.GetShader();
+	GLuint* particleTexture = particleManager.GetTexture();
+	const std::vector<Particle>& particles = particleManager.GetParticles();
+
+
+	for (const Particle& particle : particleManager.GetParticles())
+	{
+		if (particle.life > 0.0f)
+		{
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+			BindShader(particleShader);
+			glUniform1i(glGetUniformLocation(particleShader->GetProgram(), "sprite"), 0);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, *particleTexture);
+
+			glUniform3fv(glGetUniformLocation(particleShader->GetProgram(), "position"), 1, (float*)&particle.position);
+			glUniform4fv(glGetUniformLocation(particleShader->GetProgram(), "colour"), 1, (float*)&particle.colour);
+
+			particleManager.Draw();
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		}
+	}
+	
 }
 
 
@@ -297,15 +348,16 @@ void Renderer::PostProcess()
 	glUniform1i(glGetUniformLocation(postProcessShader->GetProgram(), "depthTex"), 1);
 	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
 
-	glUniform1f(glGetUniformLocation(postProcessShader->GetProgram(), "fogDensity"), 0.01f);
+	glUniform1f(glGetUniformLocation(postProcessShader->GetProgram(), "fogDensity"), 1000.0f);
 	glUniform3fv(glGetUniformLocation(postProcessShader->GetProgram(), "fogColor"), 1, (float*)&Vector3(1.5, 1.5, 1.5));
 	glUniform3fv(glGetUniformLocation(pointlightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 
-
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 	camera->BuildViewMatrix();
+
 	Matrix4 invViewProj = (projMatrix * viewMatrix).Inverse();
 	glUniformMatrix4fv(glGetUniformLocation(postProcessShader->GetProgram(), "inverseProjView"), 1, false, invViewProj.values);
+
 
 	UpdateShaderMatrices();
 	skyQuad->Draw();

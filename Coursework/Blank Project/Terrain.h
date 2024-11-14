@@ -4,7 +4,7 @@
 class Terrain : public SceneNode 
 {
 	public:
-		Terrain(GLuint* texture, GLuint* textureBump);
+		Terrain(GLuint* texture, GLuint* textureBump, GLuint* snowTex, GLuint* snowBump);
 		~Terrain(void) {};
 		void Update(float dt, Vector3 cameraPos) override;
 
