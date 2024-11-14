@@ -88,16 +88,7 @@ class Pathing
 		}
 
 		void SetPathing(bool state) {
-			if (followingPath != state) {
-				followingPath = state;
-				followingPath = false;
-			}
-
-			if (followingPath = true) 
-			{
-				bezierT = 0;
-				currentCurveIndex = 0;
-			}
+			 followingPath = false;
 		}
 
 
