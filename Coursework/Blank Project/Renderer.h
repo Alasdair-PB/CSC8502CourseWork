@@ -115,6 +115,8 @@ protected:
 	GLuint postPFBO;         
 	GLuint postPTex;
 
+	GLuint* fogTexture;
+
 	GLuint bufferFBO; 
 	GLuint bufferColourTex; 
 	GLuint bufferNormalTex; 

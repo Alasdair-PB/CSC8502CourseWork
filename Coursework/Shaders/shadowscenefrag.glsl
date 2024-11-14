@@ -26,8 +26,12 @@ out vec4 fragColour[2];
 void main(void) 
 {
     vec4 diffuse;
-    bool snowCovered = IN.worldPos.y > 150;
     vec3 normal;
+
+    vec3 worldUp = vec3(0.0, 1.0, 0.0);
+        float dotProduct = dot(normalize(IN.normal), worldUp);
+    
+    bool snowCovered = abs(dotProduct) > 0.9 && IN.worldPos.y > 50; 
     
     if (snowCovered)
     {        
@@ -43,7 +47,7 @@ void main(void)
     mat3 TBN = mat3(normalize(IN.tangent), normalize(IN.binormal), normalize(IN.normal));
     normal = normalize(TBN * normal);
 
-    float shadow = 1; 
+    float shadow = 1.0; 
     vec3 shadowNDC = IN.shadowProj.xyz / IN.shadowProj.w;
     
     if (abs(shadowNDC.x) < 1.0f && abs(shadowNDC.y) < 1.0f && abs(shadowNDC.z) < 1.0f) {

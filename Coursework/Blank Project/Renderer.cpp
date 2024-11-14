@@ -21,6 +21,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	lastCameraPos = cameraPos;
 
 	GLuint* particleTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Rock_02_normal.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	fogTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "noise.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+
 	Shader* particleShader = new Shader("particleVertex.glsl", "particleFragment.glsl");
 
 	particleManager = ParticleManager(Vector3(mapSize.x * 0.5,165, mapSize.x * 0.5), particleTexture, particleShader);
@@ -348,11 +350,17 @@ void Renderer::PostProcess()
 	glUniform1i(glGetUniformLocation(postProcessShader->GetProgram(), "depthTex"), 1);
 	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
 
-	glUniform1f(glGetUniformLocation(postProcessShader->GetProgram(), "fogDensity"), 1000.0f);
-	glUniform3fv(glGetUniformLocation(postProcessShader->GetProgram(), "fogColor"), 1, (float*)&Vector3(1.5, 1.5, 1.5));
-	glUniform3fv(glGetUniformLocation(pointlightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+	glUniform1f(glGetUniformLocation(postProcessShader->GetProgram(), "fogDensity"), 100.0f);
+	Vector3 fogColour = Vector3(1.5f, 1.5f, 1.5f);
+	glUniform3fv(glGetUniformLocation(postProcessShader->GetProgram(), "fogColor"), 1, (float*)&fogColour);
+	glUniform3fv(glGetUniformLocation(postProcessShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+
+	glUniform1i(glGetUniformLocation(postProcessShader->GetProgram(), "fogTexture"), 2);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, *fogTexture);
+
 	camera->BuildViewMatrix();
 
 	Matrix4 invViewProj = (projMatrix * viewMatrix).Inverse();
@@ -442,6 +450,8 @@ Renderer::~Renderer(void)
 	glDeleteTextures(1, &depthFBO);
 	glDeleteTextures(1, &postPFBO);
 	glDeleteTextures(1, &postPTex);
+	glDeleteTextures(1, fogTexture);
+
 
 	delete sceneShader;
 	delete combineShader;
