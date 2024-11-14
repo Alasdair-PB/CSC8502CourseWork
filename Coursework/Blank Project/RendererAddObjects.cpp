@@ -143,10 +143,9 @@ void Renderer::SetLights()
 {
 	pointLights = new Light[LIGHT_NUM];
 
-	//Vector3 lightPos = Vector3(1.0f,3.0f,0.1f);
-	//light = new Light(lightPos, Vector4(1, 0.8f, 0.5f, 1), 500);//mapSize.x);
+	Vector3 offset = Vector3(mapSize.x * 0.5, 100, mapSize.x * 0.5); //Vector3(0, 0, 0); // 
 	light = new Light(Vector3(-20.0f, 10.0f, -20.0f), Vector4(1, 1, 1, 1), 250.0f);
-
+	light->SetPosition(Vector3(-20.0f, 0, -20.0f) + offset);
 
 	for (int i = 0; i < LIGHT_NUM; ++i) {
 		Light& l = pointLights[i];

@@ -7,7 +7,7 @@ in Vertex {
 } IN;
 
 out vec4 fragColour;
-const float scaleFactors[7] = float[](0.006, 0.061, 0.242, 0.383, 0.242, 0.061, 0.006);
+//const float scaleFactors[7] = float[](0.006, 0.061, 0.242, 0.383, 0.242, 0.061, 0.006);
 
 void main(void) 
 {
@@ -26,10 +26,13 @@ void main(void)
 		fragColour += tmp * scaleFactors[i];
 	}*/
 
+
+
+
+
+
 	if (diffuse.xyz == vec3(0,1,0))
 		fragColour.a = 0;
 	else
 		fragColour = diffuse;
-	//fragColour.a = 1;
-	//fragColour.a = (fragColour.r + fragColour.g + fragColour.b <= 0.075) ? 0.0 : 1.0;
 }

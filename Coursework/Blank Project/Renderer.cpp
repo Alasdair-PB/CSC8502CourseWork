@@ -5,11 +5,6 @@
 #include "../nclgl/Light.h"
 #include "../nclgl/Pathing.h"
 
-SceneNode* nodesphere;
-SceneNode* nextSphere;
-
-GLuint sphereTexture;
-GLuint sphereBumpTexture;
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 {	
@@ -20,15 +15,15 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 		return;	
 
 	Vector3 cameraPos = mapSize * Vector3(0.5f, 5.0f, 0.5f);
-	//cameraPos.y = 250.0f;
-	camera = new Camera(-30.0f, 315.0f, Vector3(-8.0f, 5.0f, 8.0f));
+	cameraPos.y = 250.0f;
 
-	//camera = new Camera(-45.0f, 0.0f, cameraPos);
+	//camera = new Camera(-30.0f, 315.0f, Vector3(-8.0f, 5.0f, 8.0f));
+	camera = new Camera(-45.0f, 0.0f, cameraPos);
 	camera->GetPath()->SetPathPattern(cameraPos, Vector3(800,0,0), Vector3(-800,0,0), Vector3(0,0,500), 3);
 	lastCameraPos = cameraPos;
 
 	// -------------------------------------------------------------------------------------------------
-	shadowScene = new Shader("shadowscenevert.glsl", "shadowscenefrag.glsl");
+	/*shadowScene = new Shader("shadowscenevert.glsl", "shadowscenefrag.glsl");
 
 	sphereTexture = SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	sphereBumpTexture = SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
@@ -36,7 +31,12 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	SetTextureRepeating(sphereBumpTexture, true);
 
 	nextSphere = new SceneNode(Mesh::GenerateQuad(), Vector4(1, 1, 1, 1));
-	nextSphere->SetTransform(Matrix4::Translation(Vector3(0, -1, 0)) * Matrix4::Rotation(90, Vector3(1, 0, 0)));
+
+	Vector3 offset = Vector3(mapSize.x * 0.5, 250, mapSize.x * 0.5); 
+
+	nextSphere->SetTransform(Matrix4::Translation(Vector3(0, -1, 0)) * Matrix4::Rotation(-90, Vector3(1, 0, 0)));
+	nextSphere->SetTransform(Matrix4::Translation(Vector3(0, -1, 0)) * Matrix4::Translation(offset) * Matrix4::Rotation(-90, Vector3(1, 0, 0)));
+
 	nextSphere->SetShader(shadowScene);
 	nextSphere->GetMaterial()->AddProperty("diffuseTex", sphereTexture);
 	nextSphere->GetMaterial()->AddProperty("bumpTex", sphereBumpTexture);
@@ -46,10 +46,11 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 
 	root->AddChild(nextSphere);
 
-	Vector3 lightPos = mapSize * Vector3(0.5f, 5.0f, 0.5f);
-
 	nodesphere = new SceneNode(Mesh::LoadFromMeshFile("Sphere.msh"), Vector4(1, 1, 1, 1));
+
 	nodesphere->SetTransform(Matrix4::Translation(Vector3(0, 0, 0)));
+	nodesphere->SetTransform(Matrix4::Translation(Vector3(0, 0, 0)) * Matrix4::Translation(offset));
+
 	nodesphere->SetShader(shadowScene);
 	nodesphere->GetMaterial()->AddProperty("diffuseTex", sphereTexture);
 	nodesphere->GetMaterial()->AddProperty("bumpTex", sphereBumpTexture);
@@ -58,9 +59,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	nodesphere->GetMaterial()->AddProperty("cameraPos", Material::CameraPosition);
 
 	root->AddChild(nodesphere);
-
+	*/
 	// -------------------------------------------------------------------------------------------------
-
+	SetLights();
 	SetFPSCharacter(root);
 	SetProjectionMatrix();
 	this->temperature = -10.0f;
@@ -71,7 +72,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 
 	SetupDepthbuffer();
 	SetupFramebuffer();
-	SetLights();
 	SetupDeferredbuffer();
 	SetUpShadowMapBuffer();
 
@@ -169,11 +169,13 @@ void Renderer::ShadowBufferWrite()
 	glViewport(0, 0, SHADOWSIZE, SHADOWSIZE);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), Vector3(0, 0, 0));
-	projMatrix = Matrix4::Perspective(1, 100, 1, 45);
+	Vector3 terrainCenter = Vector3(mapSize.x * 0.5f, 0.0f, mapSize.x * 0.5f);
+	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), terrainCenter);
+	viewMatrix = viewMatrix * Matrix4::Rotation(45, Vector3(0, 1, 0)) * Matrix4::Translation(Vector3(-mapSize.x * 0.5f, 0.0f, mapSize.x * 0.75f));
+	float orthoSize = mapSize.x * 0.5f;
+	projMatrix = Matrix4::Orthographic(-orthoSize, orthoSize, -orthoSize, orthoSize, 100.00f, 4200.0f);
 	shadowMatrix = projMatrix * viewMatrix;
 
-	//DrawOpaque();
 	BindShader(fallBackShader);
 	DrawDepthNodes(fallBackShader);
 
@@ -413,7 +415,6 @@ Renderer::~Renderer(void)
 	delete combineShader;
 	delete postProcessShader;
 	delete pointlightShader;
-	delete shadowScene;
 	delete sphere;
 	delete[] pointLights;
 
