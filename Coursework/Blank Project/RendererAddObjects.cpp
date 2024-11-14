@@ -106,7 +106,7 @@ void Renderer::SetNodePosition(SceneNode** node, size_t count) {
 	delete planeDir;
 }
 
-Matrix4* Renderer::GetNodePositions(size_t count) 
+Matrix4* Renderer::GetNodePositions(size_t count, bool alignToFace) 
 {
 	Vector3* hitPos = new Vector3();
 	Vector3* planeDir = new Vector3();
@@ -115,19 +115,27 @@ Matrix4* Renderer::GetNodePositions(size_t count)
 	Vector3 point;
 	for (int i = 0; i < count; i++) 
 	{
+		Matrix4 transformationMatrix;
 		point = Vector3(rand() % (int)mapSize.x, 250.0f, rand() % (int)mapSize.x);
+
 		if (heightMap->RayMeshIntersect(point, Vector3(0, -1, 0), hitPos, planeDir, distance))
 		{
-			Vector3 up = *planeDir;
-			Vector3 forward = Vector3::Cross(Vector3(0, 1, 0), up);
+			if (alignToFace) {
+				Vector3 up = *planeDir;
+				Vector3 forward = Vector3::Cross(Vector3(0, 1, 0), up);
 
-			if (forward.Length() < 1e-6) {
-				forward = Vector3::Cross(Vector3(1, 0, 0), up);
+				if (forward.Length() < 1e-6) {
+					forward = Vector3::Cross(Vector3(1, 0, 0), up);
+				}
+				forward.Normalise();
+				Vector3 right = Vector3::Cross(up, forward);
+				Matrix4 rot = Matrix4::FromAxes(right, up, -forward);
+				transformationMatrix = Matrix4::Translation(*hitPos)* rot* Matrix4::Scale(Vector3(25, 25, 25));
 			}
-			forward.Normalise();
-			Vector3 right = Vector3::Cross(up, forward);
-			Matrix4 rot = Matrix4::FromAxes(right, up, -forward);
-			offsets[i] = (Matrix4::Translation(*hitPos) * rot * Matrix4::Scale(Vector3(25,25,25)));
+			else 
+				transformationMatrix = Matrix4::Translation(*hitPos) * Matrix4::Scale(Vector3(25, 25, 25));
+
+			offsets[i] = (transformationMatrix);
 		}
 		else {
 			offsets[i] = (Matrix4::Translation(Vector3(mapSize.x * 0.5, 165, mapSize.x)));
@@ -144,7 +152,7 @@ bool Renderer::SetFoliage(SceneNode* root)
 	Shader* newShader = new Shader("TexturedVertex.glsl", "leafFragment.glsl", "WiggleGeometry.glsl");		
 	shader.emplace_back(newShader);
 
-	SceneNode* grass = new Foliage(GetNodePositions(foliageCount));
+	SceneNode* grass = new Foliage(GetNodePositions(foliageCount, true));
 	grass->SetShader(newShader);
 	root->AddChild(grass);
 		
@@ -157,7 +165,7 @@ bool Renderer::SetRocks(SceneNode* root)
 	Shader* newShader = new Shader("TexturedVertex.glsl", "leafFragment.glsl");		
 	shader.emplace_back(newShader);
 
-	SceneNode* rock = new Rock(GetNodePositions(foliageCount));
+	SceneNode* rock = new Rock(GetNodePositions(foliageCount, true));
 	rock->SetShader(newShader);
 	root->AddChild(rock);
 	
@@ -186,7 +194,7 @@ bool Renderer::SetTree(SceneNode* root)
 	shader.emplace_back(newTrunkShader);
 	shader.emplace_back(newShader);
 
-	Matrix4* batchOffsets = GetNodePositions(foliageCount);
+	Matrix4* batchOffsets = GetNodePositions(foliageCount, false);
 
 	SceneNode* leaves = new Leaves(batchOffsets);
 	SceneNode* trunk = new Trunk(mapSize.x, newTexture, newIceTexture, woodTex, woodBump, iceBump, batchOffsets);

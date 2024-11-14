@@ -16,6 +16,9 @@ Trunk::Trunk(float hSize, GLuint* icicleMask, GLuint* iceTexture, GLuint* woodTe
 	GetMaterial()->AddProperty("iceBumpTex", iceBumpTex);
 
 
+	// Must match partner object
+	GetMaterial()->AddProperty("batchSize", Material::BatchSize50);
+
 	SetColour(Vector4(0, 0, 0, 1));
 	SetModelScale(Vector3(25, 25, 25));
 

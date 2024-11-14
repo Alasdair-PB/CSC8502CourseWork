@@ -11,6 +11,8 @@ Rock::Rock(Matrix4* offsets)
 	GetMaterial()->AddProperty("faceCullOff", Material::DualFace);
 	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
 	GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
+	GetMaterial()->AddProperty("batchSize", Material::BatchSize100);
+
 
 	SetColour(Vector4(0, 0, 0, 1));
 	SetModelScale(Vector3(25, 25, 25));

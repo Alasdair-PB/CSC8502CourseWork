@@ -17,6 +17,8 @@ Foliage::Foliage(Matrix4* offsets)
 	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
 	GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
 	GetMaterial()->AddProperty("dtSeason", Material::DeltaTimeSeason);
+	GetMaterial()->AddProperty("batchSize", Material::BatchSize300);
+
 
 
 	SetColour(Vector4(0, 0, 0, 1));

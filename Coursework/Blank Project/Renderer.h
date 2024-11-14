@@ -26,7 +26,7 @@ protected:
 	bool SetTree(SceneNode* root);
 	bool SetFoliage(SceneNode* root);
 	bool SetRocks(SceneNode* root);
-	Matrix4* GetNodePositions(size_t count);
+	Matrix4* GetNodePositions(size_t count, bool alignToFace);
 
 	bool SetFPSCharacter(SceneNode* root);
 	bool SetCubeMap();
@@ -35,7 +35,7 @@ protected:
 	void UpdateFrameTime(float dt);
 	void UpdateRunner();
 
-	void SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFalg, int* index, Material::WorldValue val, GLint location);
+	void SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFalg, int* index, int* batchDraws, Material::WorldValue val, GLint location);
 	void DepthBufferWrite();
 	void DeferredBufferWrite();
 	void ShadowBufferWrite();

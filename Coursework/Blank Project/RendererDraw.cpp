@@ -27,6 +27,7 @@ void Renderer::DrawNode(SceneNode* n)
 		bool renderFlag = false;
 		bool faceCulling = true;
 		bool tessFalg = false;
+		int batchDraws = 1;
 
 		if (!material)
 			return;
@@ -111,7 +112,7 @@ void Renderer::DrawNode(SceneNode* n)
 						}
 						else if constexpr (std::is_same_v<T, Material::WorldValue>)
 						{
-							SetWorldValues(&renderFlag, &faceCulling, &tessFalg, &index, val, location);
+							SetWorldValues(&renderFlag, &faceCulling, &tessFalg, &index, &batchDraws, val, location);
 						}
 						}, value);
 				}
@@ -138,9 +139,7 @@ void Renderer::DrawNode(SceneNode* n)
 		}
 		else 
 		{
-		
-
-			for (int i = 0; i < foliageCount; i++) 
+			for (int i = 0; i < batchDraws; i++) 
 			{
 				Matrix4 model = batchOffsets[i];
 				glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false, model.values);
@@ -155,7 +154,7 @@ void Renderer::DrawNode(SceneNode* n)
 }
 
 
-void Renderer::SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFalg, int* index, Material::WorldValue val, GLint location)
+void Renderer::SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFalg, int* index, int* batchDraws, Material::WorldValue val, GLint location)
 {
 	switch (val) {
 		case Material::CameraPosition:
@@ -198,6 +197,15 @@ void Renderer::SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFal
 			break;
 		case Material::DualFace:
 			faceCulling = false;
+			break;
+		case Material::BatchSize50:
+			*batchDraws = 50;
+			break;
+		case Material::BatchSize100:
+			*batchDraws = 100;
+			break;
+		case Material::BatchSize300:
+			*batchDraws = 300;
 			break;
 
 		case Material::DepthTexture:

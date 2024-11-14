@@ -17,6 +17,10 @@ Leaves::Leaves(Matrix4* offsetBatch)
 	GetMaterial()->AddProperty("dtSeason", Material::DeltaTimeSeason);
 	GetMaterial()->AddProperty("batch", offsetBatch);
 
+	// Must match partner object
+	GetMaterial()->AddProperty("batchSize", Material::BatchSize50);
+
+
 	SetColour(Vector4(0, 0, 0, 1));
 	SetModelScale(Vector3(25, 25, 25));
 }
