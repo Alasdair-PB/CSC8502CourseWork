@@ -25,6 +25,7 @@ out vec4 fragColour[2];
 
 void main(void) 
 {
+
     vec4 diffuse;
     vec3 normal;
 

@@ -30,7 +30,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	SetLights();
 	SetFPSCharacter(root);
 	SetProjectionMatrix();
-	this->temperature = 100.0f;
+	this->temperature = 30.0f;
 	this->dt = 0;
 	this->dtSeason = 0;
 	this->currentFrame = 0;
@@ -72,16 +72,21 @@ void Renderer::UpdateScene(float dt)
 
 void Renderer::UpdateTemperature(float dt) 
 {	
+	this->dt += dt;
+	this->dtSeason += dt;
 	float nextTemperature = this->temperature;
 	float deltaTemperature = 0.1f;
 
-	float minTemperature = -40.0f;
-	float maxTemperature = 60.0f;
-	float t = (temperature - minTemperature) / (maxTemperature - minTemperature);
-	nextTemperature = minTemperature * (1 - t) + maxTemperature * t;
+	float modedTime = this->dt;
 
-	this->dt += dt;
-	this->dtSeason += dt;
+
+	modedTime = fmod(modedTime, 100.0f);
+	if (modedTime < 50.0f)
+		nextTemperature -= deltaTemperature;
+	else
+		nextTemperature += deltaTemperature;
+
+
 	particleManager.UpdateParticles(dt);
 
 	if (Window::GetKeyboard()->KeyDown(KEYBOARD_1))
@@ -144,8 +149,6 @@ void Renderer::ShadowBufferWrite()
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, SHADOWSIZE, SHADOWSIZE);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-
 
 	Vector3 terrainCenter = Vector3(mapSize.x * 0.5f, 0.0f, mapSize.x * 0.5f);
 	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), terrainCenter);

@@ -1,6 +1,7 @@
 #version 330 core
 
 uniform sampler2D diffuseTex;  
+uniform float temperature;
 //uniform vec3 cameraPos;   
 
 in Vertex {
@@ -16,16 +17,10 @@ out vec4[2] fragColour;
 
 void main(void) 
 {
-    //vec3 viewDir = normalize(cameraPos - IN.normal); 
-    //float cosTheta = dot(IN.normal, viewDir); 
-    //float fresnel = pow(1.0 - cosTheta, 5.0);  
+    vec4 diffuse = texture(diffuseTex, IN.texCoord).rgba;  
+    if(diffuse.a == 0.0) 
+		discard;
 
-    vec4 diffuse = texture(diffuseTex, IN.texCoord);  
-
-    //diffuse.rgb *= 1.5;
-    //vec4 rimColor = vec4(fresnel, fresnel, fresnel, 1.0); 
-
-    diffuse.a= 1;
-    fragColour[0] = diffuse; // + IN.colour;// +  (1-diffuse) * rimColor; 
+    fragColour[0] = diffuse; 
     fragColour[1] = vec4(1);
 }

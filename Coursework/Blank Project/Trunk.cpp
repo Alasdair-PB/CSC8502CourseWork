@@ -23,7 +23,7 @@ Trunk::Trunk(float hSize, GLuint* icicleMask, GLuint* iceTexture, GLuint* woodTe
 	SetModelScale(Vector3(25, 25, 25));
 
 	GetMaterial()->AddProperty("temperature", Material::Temperature);
-	GetMaterial()->AddProperty("iceHeight", 25.0f);
+	GetMaterial()->AddProperty("iceHeight", 1.0f);
 
 	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
 	GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);

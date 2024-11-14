@@ -35,17 +35,15 @@ void main() {
 
         float frozen = 0;
 
-        if (temperature < 0) {
+        if (temperature < 10) {
             if (IN[i].normal.y < 0.0) {                    
             
 
                 float mask = texture(icicleMask, IN[i].texCoord).r;
                 if (mask > 0.45) {                
-                    frozen = 1;
-
-                    float maxBoundary = -10;
-                    float minBoundary = 10;
-                    float tempMult = clamp((maxBoundary - abs(temperature)) / (maxBoundary - minBoundary), 0.0, 1.0);
+                    
+                    float tempMult = abs(clamp(temperature - 10, -20, 0));
+                    frozen = abs(tempMult)/20;
                     float displacement = iceHeight * mask * tempMult;
                     worldPos.y -= displacement;
                 }

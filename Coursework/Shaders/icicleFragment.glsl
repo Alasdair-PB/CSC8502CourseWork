@@ -21,25 +21,20 @@ out vec4 fragColour[2];
 
 void main(void)
 {
-    vec4 diffuse;
      mat3 TBN = mat3(normalize(IN.tangent), normalize(IN.binormal), normalize(IN.normal));
 
-    vec3 normal;
+     vec4 diffuse = texture(iceTex, IN.texCoord);  
+     vec3 normal = texture(iceBumpTex, IN.texCoord).rgb * 2.0 - 1.0;
 
-    if (IN.isFrozen > 0)
-    {
-        diffuse = texture(iceTex, IN.texCoord);  
-        normal = texture(iceBumpTex, IN.texCoord).rgb * 2.0 - 1.0;
+     vec4 iceDiffuse = texture(diffuseTex, IN.texCoord);  
+     vec3 iceNormal = texture(woodBumpTex, IN.texCoord).rgb * 2.0 - 1.0;
 
-    } else
-    {
-        diffuse = texture(diffuseTex, IN.texCoord);  
-        normal = texture(woodBumpTex, IN.texCoord).rgb * 2.0 - 1.0;
-    }
+     diffuse = mix(iceDiffuse, diffuse, IN.isFrozen);
+     normal = mix(iceNormal, normal, IN.isFrozen);
 
-    normal = normalize(TBN * normal);
+     normal = normalize(TBN * normal);
 
-    diffuse.a = 1;
-    fragColour[0] = diffuse; 
-    fragColour[1] = vec4(normal * 0.5 + 0.5, 1.0);
+     diffuse.a = 1;
+     fragColour[0] = diffuse; 
+     fragColour[1] = vec4(normal * 0.5 + 0.5, 1.0);
 }

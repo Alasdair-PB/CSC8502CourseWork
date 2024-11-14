@@ -23,6 +23,6 @@ void main(void)
     normal = normalize(TBN * normal);
 
     diffuse.a= 1;
-    fragColour[0] = diffuse; 
+    fragColour[0] = diffuse;
     fragColour[1] = vec4(normal * 0.5 + 0.5, 1.0);
 }
