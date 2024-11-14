@@ -38,6 +38,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 
 	SetupDepthbuffer();
 	SetupFramebuffer();
+	SetUpCombinedShadowBuffer(SHADOWSIZE, SHADOWSIZE);
 	SetupDeferredbuffer();
 	SetUpShadowMapBuffer();
 
@@ -145,28 +146,53 @@ void Renderer::DepthBufferWrite()
 
 void Renderer::ShadowBufferWrite() 
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glViewport(0, 0, SHADOWSIZE, SHADOWSIZE);
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	for (int i = 0; i < LIGHT_NUM; i++) 
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, shadowFBOs[i]);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		glViewport(0, 0, SHADOWSIZE, SHADOWSIZE);
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-	Vector3 terrainCenter = Vector3(mapSize.x * 0.5f, 0.0f, mapSize.x * 0.5f);
-	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), terrainCenter);
-	viewMatrix = viewMatrix * Matrix4::Rotation(45, Vector3(0, 1, 0)) * Matrix4::Translation(Vector3(-mapSize.x * 0.5f, 0.0f, mapSize.x * 0.75f));
-	float orthoSize = mapSize.x * 0.5f;
-	projMatrix = Matrix4::Orthographic(-orthoSize, orthoSize, -orthoSize, orthoSize, 100.00f, 4200.0f);
-	shadowMatrix = projMatrix * viewMatrix;
+		Vector3 terrainCenter = Vector3(mapSize.x * 0.5f, 0.0f, mapSize.x * 0.5f);
+		viewMatrix = Matrix4::BuildViewMatrix(pointLights[i].GetPosition(), terrainCenter);
+		viewMatrix = viewMatrix * Matrix4::Rotation(45, Vector3(0, 1, 0)) * Matrix4::Translation(Vector3(-mapSize.x * 0.5f, 0.0f, mapSize.x * 0.75f));
+		float orthoSize = mapSize.x * 0.5f;
+		projMatrix = Matrix4::Orthographic(-orthoSize, orthoSize, -orthoSize, orthoSize, 100.00f, 4200.0f);
+		shadowMatrix = projMatrix * viewMatrix;
 
 
-	BindShader(fallBackShader);
-	DrawDepthNodes(fallBackShader);
+		BindShader(fallBackShader);
+		DrawDepthNodes(fallBackShader);
 
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glViewport(0, 0, width, height);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glViewport(0, 0, width, height);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+
 	viewMatrix = camera->BuildViewMatrix();
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 }
+
+void Renderer::CombineShadowMaps() 
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, combinedShadowFBO);
+	glViewport(0, 0, SHADOWSIZE, SHADOWSIZE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_ONE, GL_ONE);
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	for (int i = 0; i < LIGHT_NUM; i++) {
+		glBindTexture(GL_TEXTURE_2D, shadowTextures[i]);
+		skyQuad->Draw();
+	}
+
+	glDisable(GL_BLEND);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, width, height);
+}
+
+
 
 void Renderer::DeferredBufferWrite() 
 {
@@ -189,7 +215,7 @@ void Renderer::RenderScene()
 
 	DepthBufferWrite();	
 	ShadowBufferWrite();
-
+	CombineShadowMaps();
 	DrawSkybox();
 	DrawParticles();
 
@@ -456,6 +482,10 @@ Renderer::~Renderer(void)
 	glDeleteTextures(1, fogTexture);
 
 
+	//glDeleteTextures(1, &combinedShadowFBO);
+	//glDeleteTextures(1, &combinedShadowTex);
+
+
 	delete sceneShader;
 	delete combineShader;
 	delete postProcessShader;
@@ -463,8 +493,9 @@ Renderer::~Renderer(void)
 	delete sphere;
 	delete[] pointLights;
 
-	glDeleteTextures(1, &shadowFBO);
-	glDeleteTextures(1, &shadowTex);
+	shadowFBOs.clear();
+	shadowTextures.clear();
+
 	glDeleteTextures(1, &bufferColourTex);
 	glDeleteTextures(1, &bufferNormalTex);
 	glDeleteTextures(1, &bufferDepthTex);

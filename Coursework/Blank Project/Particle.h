@@ -30,6 +30,12 @@ class ParticleManager
 
         ParticleManager(void) {}
 
+        ~ParticleManager(void) 
+        {
+            delete shader;
+            glDeleteTextures(1, texture);
+        }
+
         ParticleManager(Vector3 offset, GLuint* texture, Shader* shader) {
             this->offset = offset;
             this->mesh = Mesh::GenerateTriangle();

@@ -219,7 +219,7 @@ void Renderer::SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFal
 			// Changed to hard setting while debugging
 			glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "shadowTex"), *index);
 			glActiveTexture(GL_TEXTURE0 + *index);
-			glBindTexture(GL_TEXTURE_2D, shadowTex);
+			glBindTexture(GL_TEXTURE_2D, combinedShadowTex);
 			*index += 1;
 			break;
 

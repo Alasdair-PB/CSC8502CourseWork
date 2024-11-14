@@ -270,7 +270,6 @@ void Renderer::SetLights()
 
 	Vector3 offset = Vector3(mapSize.x * 0.5, 100, mapSize.x * 0.5); //Vector3(0, 0, 0); // 
 	light = new Light(Vector3(-20.0f, 10.0f, -20.0f), Vector4(1, 1, 1, 1), 250.0f);
-
 	light->SetPosition(Vector3(-20.0f, 0, -20.0f) + offset);
 
 	for (int i = 0; i < LIGHT_NUM; ++i) {
@@ -280,6 +279,6 @@ void Renderer::SetLights()
 			rand() % (int)mapSize.z));
 
 		l.SetColour(Vector4(1,1,1,1));
-		l.SetRadius(500.0f + (rand() % 250));
+		l.SetRadius(1500.0f + (rand() % 250));
 	}
 }

@@ -41,6 +41,7 @@ protected:
 	void DepthBufferWrite();
 	void DeferredBufferWrite();
 	void ShadowBufferWrite();
+	void Renderer::CombineShadowMaps();
 
 	void DrawSkybox();
 	void DrawParticles();
@@ -66,6 +67,7 @@ protected:
 	void SetUpShadowMapBuffer();
 	void SetupDepthbuffer();
 	void SetupDeferredbuffer();
+	void SetUpCombinedShadowBuffer(int width, int height);
 
 	#define SHADOWSIZE 2048
 
@@ -109,8 +111,11 @@ protected:
 	GLuint depthFBO;
 	GLuint depthTex;
 
-	GLuint shadowTex;
-	GLuint shadowFBO;
+	GLuint combinedShadowFBO;
+	GLuint combinedShadowTex;
+
+	vector<GLuint> shadowTextures;
+	vector<GLuint> shadowFBOs;
 
 	GLuint postPFBO;         
 	GLuint postPTex;
