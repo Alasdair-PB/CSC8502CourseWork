@@ -12,7 +12,7 @@ class MshObject : public SceneNode
 			SetMesh(mesh);
 
 			MeshMaterial* material = new MeshMaterial(name + ".mat");
-			std::vector<GLuint> textures(mesh->GetSubMeshCount());
+			std::vector<GLuint*> textures(mesh->GetSubMeshCount());
 
 			for (int i = 0; i < mesh->GetSubMeshCount(); ++i) {
 				const MeshMaterialEntry* matEntry = material->GetMaterialForLayer(i);
@@ -20,7 +20,7 @@ class MshObject : public SceneNode
 				matEntry->GetEntry("Diffuse", &filename);
 				string path = TEXTUREDIR + *filename;
 
-				GLuint texID = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y);
+				GLuint* texID = new GLuint(SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y));
 				textures[i] = texID;
 			}
 

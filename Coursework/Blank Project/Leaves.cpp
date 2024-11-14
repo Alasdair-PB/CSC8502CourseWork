@@ -1,7 +1,7 @@
 #include "Leaves.h"
 
 
-Leaves::Leaves()
+Leaves::Leaves(Matrix4* offsetBatch)
 {
 	SetFromSubMesh("Leaves");
 
@@ -15,7 +15,7 @@ Leaves::Leaves()
 	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);
 	GetMaterial()->AddProperty("viewMatrix", Material::ViewMatrix);
 	GetMaterial()->AddProperty("dtSeason", Material::DeltaTimeSeason);
-
+	GetMaterial()->AddProperty("batch", offsetBatch);
 
 	SetColour(Vector4(0, 0, 0, 1));
 	SetModelScale(Vector3(25, 25, 25));

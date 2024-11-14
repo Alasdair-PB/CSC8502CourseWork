@@ -1,9 +1,12 @@
 #include "Rock.h"
 
 
-Rock::Rock()
+Rock::Rock(Matrix4* offsets)
 {
+
 	SetFromSubMesh("RockAfbx");
+	GetMaterial()->AddProperty("batch", offsets);
+
 	GetMaterial()->AddProperty("cameraPosition", Material::CameraPosition);
 	GetMaterial()->AddProperty("faceCullOff", Material::DualFace);
 	GetMaterial()->AddProperty("projMatrix", Material::ProjMatrix);

@@ -13,7 +13,8 @@ void Renderer::DrawNodeWithFallBack(SceneNode* n, Shader* shader)
 	}
 }
 
-void Renderer::DrawNode(SceneNode* n) {
+void Renderer::DrawNode(SceneNode* n) 
+{
 
 	if (n->GetMesh() && n->GetShader()) {
 		if (currentShader != n->GetShader()) {
@@ -21,11 +22,6 @@ void Renderer::DrawNode(SceneNode* n) {
 			BindShader(currentShader);
 			UpdateShaderMatrices();
 		}
-
-		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
-		glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false, model.values);
-		glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
-
 		Material* material = n->GetMaterial();
 
 		bool renderFlag = false;
@@ -35,8 +31,12 @@ void Renderer::DrawNode(SceneNode* n) {
 		if (!material)
 			return;
 		
+
 		const auto& propertyMaps = material->GetProperties();
 		int index = 0;
+		Matrix4* batchOffsets = NULL;
+		glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
+
 
 		for (const auto& propertyMap : propertyMaps) {
 			for (const auto& [outerKey, innerMap] : propertyMap) {
@@ -45,10 +45,10 @@ void Renderer::DrawNode(SceneNode* n) {
 						using T = std::decay_t<decltype(val)>;
 						GLint location = glGetUniformLocation(currentShader->GetProgram(), innerKey.c_str());
 
-						if constexpr (std::is_same_v<T, GLuint>)
+						if constexpr (std::is_same_v<T, GLuint*>)
 						{
 							glActiveTexture(GL_TEXTURE0 + index);
-							glBindTexture(GL_TEXTURE_2D, val);
+							glBindTexture(GL_TEXTURE_2D, *val);
 							glUniform1i(location, index);
 							index++;
 						}
@@ -56,6 +56,11 @@ void Renderer::DrawNode(SceneNode* n) {
 						{
 							glUniform4fv(location, 1, reinterpret_cast<const float*>(&val));
 						}
+						else if  constexpr (std::is_same_v<T, Matrix4*>)
+						{
+							batchOffsets = val;
+						}
+
 						else if constexpr (std::is_same_v<T, Vector3>)
 						{
 							glUniform3fv(location, 1, reinterpret_cast<const float*>(&val));
@@ -92,14 +97,14 @@ void Renderer::DrawNode(SceneNode* n) {
 						{
 							glUniform1f(location, val);
 						}
-						else if constexpr (std::is_same_v<T, std::vector<GLuint>>)
+						else if constexpr (std::is_same_v<T, std::vector<GLuint*>>)
 						{
 							Mesh* myMesh = n->GetMesh();
 							glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), index);
 							for (int i = 0; i < myMesh->GetSubMeshCount(); ++i)
 							{
 								glActiveTexture(GL_TEXTURE0 + index);
-								glBindTexture(GL_TEXTURE_2D, val[i]);
+								glBindTexture(GL_TEXTURE_2D, *val[i]);
 								myMesh->DrawSubMesh(i);
 							}
 							index++;
@@ -112,21 +117,40 @@ void Renderer::DrawNode(SceneNode* n) {
 				}
 			}
 		}
+
+		if (faceCulling == false)
+				glDisable(GL_CULL_FACE);
+
+		if (batchOffsets == NULL) 
+		{
+			Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
+			glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false, model.values);
+
+			if (renderFlag)
+				SetShaderLight(*light);
+
+			if (tessFalg)
+				n->Draw(*this, GL_PATCHES);
+			else
+				n->Draw(*this);
+
+
+		}
+		else 
+		{
 		
-		if (renderFlag) 
-			SetShaderLight(*light);
 
+			for (int i = 0; i < foliageCount; i++) 
+			{
+				Matrix4 model = batchOffsets[i];
+				glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false, model.values);
+				n->Draw(*this);
+			}
+			
+		}
+		
 		if (faceCulling == false)
-			glDisable(GL_CULL_FACE);
-
-		if (tessFalg)
-			n->Draw(*this, GL_PATCHES);
-		else
-			n->Draw(*this);
-
-		if (faceCulling == false)
-			glEnable(GL_CULL_FACE);
-
+				glEnable(GL_CULL_FACE);
 	}
 }
 

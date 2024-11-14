@@ -1,12 +1,14 @@
 #include "Foliage.h"
 
 
-Foliage::Foliage()
+Foliage::Foliage(Matrix4* offsets)
 {
 	SetFromSubMesh("GrassBlade");
 
 	GetMaterial()->AddProperty("wiggleIntensity", 0.5f);
 	GetMaterial()->AddProperty("wiggleFrequency", 2.5f);
+	GetMaterial()->AddProperty("batch", offsets);
+
 
 	GetMaterial()->AddProperty("dt", Material::DeltaTime);
 	GetMaterial()->AddProperty("temperature", Material::Temperature);

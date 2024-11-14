@@ -4,6 +4,7 @@
 #include "Vector4.h"
 #include "Mesh.h"
 #include <unordered_map>
+#include <iostream>
 #include <variant>
 #include <vector>
 #include "../nclgl/MeshAnimation.h"
@@ -19,15 +20,16 @@ public:
     enum WorldValue { CameraPosition, DeltaTimeSeason, DeltaTime, Temperature, CubeMap, 
         TessQuad, TessTri, LightRender, FarPlane, DualFace, DepthTexture, ShadowMap, ProjMatrix, ViewMatrix, Dimensions
     };
-    using PropertyValue = std::variant<Vector4, GLuint, Vector3, Matrix4, int, std::string, MeshAnimation*, WorldValue, float, std::vector<GLuint>>;
+    using PropertyValue = std::variant<Vector4, GLuint*, Vector3, Matrix4, Matrix4*, int, std::string, MeshAnimation*, WorldValue, float, std::vector<GLuint*>>;
 
     void SetShader(Shader* shader) { this->shader = shader; }
     Shader* GetShader() const { return shader; }
 
+
     std::string getOuterKey(const PropertyValue& value) {
         return std::visit([](auto&& val) -> std::string {
             using T = std::decay_t<decltype(val)>;
-            if constexpr (std::is_same_v<T, GLuint>) return "guint";
+            if constexpr (std::is_same_v<T, GLuint*>) return "guint";
             else if constexpr (std::is_same_v<T, Vector4>) return "vector4";
             else if constexpr (std::is_same_v<T, Vector3>) return "vector3";
             else if constexpr (std::is_same_v<T, Matrix4>) return "matrix4";
@@ -35,7 +37,8 @@ public:
             else if constexpr (std::is_same_v<T, float>) return "float";
             else if constexpr (std::is_same_v<T, std::string>) return "string";
             else if constexpr (std::is_same_v<T, Material::WorldValue>) return "worldValue";
-            else if constexpr (std::is_same_v<T, std::vector<GLuint>>) return "textureArray";
+            else if constexpr (std::is_same_v<T, std::vector<GLuint*>>) return "textureArray";
+            else if constexpr (std::is_same_v<T, Matrix4*>) return "matrixArray";
             else if constexpr (std::is_same_v<T, MeshAnimation*>) return "meshAnimation";
 
             else return "unknown";

@@ -5,7 +5,7 @@
 
 class Rock : public MshObject {
 public:
-	Rock();
+	Rock(Matrix4* offsets);
 
 	~Rock(void) {
 
@@ -17,4 +17,5 @@ public:
 protected:
 	SceneNode* rock;
 	Mesh* mesh;
+	Matrix4* offsets;
 };

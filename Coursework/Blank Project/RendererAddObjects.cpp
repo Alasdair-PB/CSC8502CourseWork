@@ -37,7 +37,7 @@ bool Renderer::SetTerrain(SceneNode* root)
 	if (!newTerrainShader->LoadSuccess()) 
 		return false;
 
-	Terrain* terrain = new Terrain(*newTexture, *newBumpTexture);
+	Terrain* terrain = new Terrain(newTexture, newBumpTexture);
 	terrain->SetShader(newTerrainShader);
 
 	HeightMap* heightMap = new HeightMap(TEXTUREDIR "noise.png");
@@ -80,7 +80,8 @@ void Renderer::SetNodePosition(SceneNode** node, size_t count) {
 	Vector3* planeDir = new Vector3();
 	float distance = 300;
 
-	if (heightMap->RayMeshIntersect(point, Vector3(0, -1, 0), hitPos, planeDir, distance)) {
+	if (heightMap->RayMeshIntersect(point, Vector3(0, -1, 0), hitPos, planeDir, distance)) 
+	{
 		Vector3 up = *planeDir;
 		Vector3 forward = Vector3::Cross(Vector3(0, 1, 0), up);
 
@@ -105,23 +106,48 @@ void Renderer::SetNodePosition(SceneNode** node, size_t count) {
 	delete planeDir;
 }
 
+Matrix4* Renderer::GetNodePositions(size_t count) 
+{
+	Vector3* hitPos = new Vector3();
+	Vector3* planeDir = new Vector3();
+	float distance = 300;
+	Matrix4* offsets = new Matrix4[count];
+	Vector3 point;
+	for (int i = 0; i < count; i++) 
+	{
+		point = Vector3(rand() % (int)mapSize.x, 250.0f, rand() % (int)mapSize.x);
+		if (heightMap->RayMeshIntersect(point, Vector3(0, -1, 0), hitPos, planeDir, distance))
+		{
+			Vector3 up = *planeDir;
+			Vector3 forward = Vector3::Cross(Vector3(0, 1, 0), up);
 
-const int foliageCount = 200;
+			if (forward.Length() < 1e-6) {
+				forward = Vector3::Cross(Vector3(1, 0, 0), up);
+			}
+			forward.Normalise();
+			Vector3 right = Vector3::Cross(up, forward);
+			Matrix4 rot = Matrix4::FromAxes(right, up, -forward);
+			offsets[i] = (Matrix4::Translation(*hitPos) * rot * Matrix4::Scale(Vector3(25,25,25)));
+		}
+		else {
+			offsets[i] = (Matrix4::Translation(Vector3(mapSize.x * 0.5, 165, mapSize.x)));
+		}
+	}
+
+	delete hitPos;
+	delete planeDir;
+	return offsets;
+}
 
 bool Renderer::SetFoliage(SceneNode* root) 
 {		
 	Shader* newShader = new Shader("TexturedVertex.glsl", "leafFragment.glsl", "WiggleGeometry.glsl");		
 	shader.emplace_back(newShader);
 
-	for (int i = 0; i < foliageCount; i++) 
-	{
-		SceneNode* grass = new Foliage();
-		grass->SetShader(newShader);
-
-		SceneNode* nodes[] = { grass };
-		SetNodePosition(nodes, 1);
-		root->AddChild(grass);
-	}		
+	SceneNode* grass = new Foliage(GetNodePositions(foliageCount));
+	grass->SetShader(newShader);
+	root->AddChild(grass);
+		
 	return true;
 }
 
@@ -131,23 +157,17 @@ bool Renderer::SetRocks(SceneNode* root)
 	Shader* newShader = new Shader("TexturedVertex.glsl", "leafFragment.glsl");		
 	shader.emplace_back(newShader);
 
-	for (int i = 0; i < foliageCount; i++)
-	{
-		SceneNode* rock = new Rock();
-		rock->SetShader(newShader);
-
-		SceneNode* nodes[] = { rock };
-		SetNodePosition(nodes, 1);
-		root->AddChild(rock);
-
-	}		
+	SceneNode* rock = new Rock(GetNodePositions(foliageCount));
+	rock->SetShader(newShader);
+	root->AddChild(rock);
+	
 	return true;
 }
 
 
 bool Renderer::SetTree(SceneNode* root)
 {
-	Shader* newShader = new Shader("TexturedVertex.glsl", "leafFragment.glsl", "treeGeometry.glsl.glsl");
+	Shader* newShader = new Shader("TexturedVertex.glsl", "leafFragment.glsl", "treeGeometry.glsl");
 	Shader* newTrunkShader = new Shader("icicleVertex.glsl", "icicleFragment.glsl", "IcicleGeometry.glsl"); //, "icicleTessControl.glsl", "icicleTessEvaluation.glsl");
 
 	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "IceOffset.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
@@ -166,10 +186,10 @@ bool Renderer::SetTree(SceneNode* root)
 	shader.emplace_back(newTrunkShader);
 	shader.emplace_back(newShader);
 
+	Matrix4* batchOffsets = GetNodePositions(foliageCount);
 
-
-	SceneNode* leaves = new Leaves();
-	SceneNode* trunk = new Trunk(mapSize.x, *newTexture, *newIceTexture, *woodTex, *woodBump, *iceBump);
+	SceneNode* leaves = new Leaves(batchOffsets);
+	SceneNode* trunk = new Trunk(mapSize.x, newTexture, newIceTexture, woodTex, woodBump, iceBump, batchOffsets);
 
 	trunk->SetShader(newTrunkShader);
 	leaves->SetShader(newShader);
@@ -204,7 +224,7 @@ bool Renderer::SetWater(SceneNode* root)
 	texture.push_back(newBumpTexture);
 	shader.emplace_back(waterShader);
 
-	Water* water = new Water(*newTexture, *newBumpTexture, *newIceTexture, *newIceBumpTexture, mapSize.x);
+	Water* water = new Water(newTexture, newBumpTexture, newIceTexture, newIceBumpTexture, mapSize.x);
 	water->SetShader(waterShader);
 
 	root->AddChild(water);

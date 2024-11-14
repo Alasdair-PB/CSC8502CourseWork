@@ -5,16 +5,16 @@
 
 class Foliage : public MshObject {
 public:
-	Foliage();
+	Foliage(Matrix4* offsets);
 
-	~Foliage(void) {
-
+	~Foliage(void) 
+	{
 		delete mesh;
-
 	};
 	void Update(float dt, Vector3 cameraPos) override;
 
 protected:
 	SceneNode* foliage;
 	Mesh* mesh;
+	Matrix4* offsets;
 };

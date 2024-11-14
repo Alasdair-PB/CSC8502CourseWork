@@ -1,7 +1,7 @@
 #include "Terrain.h"
 #include "../nclgl/HeightMap.h"
 
-Terrain::Terrain(GLuint texture, GLuint textureBump)
+Terrain::Terrain(GLuint* texture, GLuint* textureBump)
 {
 	SetColour(Vector4(0, 0, 0, 1)); // Not transparent
 

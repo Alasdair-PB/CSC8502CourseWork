@@ -26,6 +26,7 @@ protected:
 	bool SetTree(SceneNode* root);
 	bool SetFoliage(SceneNode* root);
 	bool SetRocks(SceneNode* root);
+	Matrix4* GetNodePositions(size_t count);
 
 	bool SetFPSCharacter(SceneNode* root);
 	bool SetCubeMap();
@@ -73,6 +74,7 @@ protected:
 	Light* light;
 
 	const int LIGHT_NUM = 32;
+	const int foliageCount = 300;
 
 	float dt;
 	float dtSeason;

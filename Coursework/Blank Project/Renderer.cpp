@@ -11,11 +11,10 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	root = new SceneNode();
 
-	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root) || !SetFoliage(root) || !SetRocks(root))
+	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root) || !SetFoliage(root)|| !SetRocks(root))
 		return;	
 
-	Vector3 cameraPos = mapSize * Vector3(0.5f, 5.0f, 0.5f);
-	cameraPos.y = 250.0f;
+	Vector3 cameraPos = Vector3(mapSize.x * 0.5f, 250.0f, mapSize.x * 0.5f);
 	camera = new Camera(-45.0f, 0.0f, cameraPos);
 	camera->GetPath()->SetPathPattern(cameraPos, Vector3(800,0,0), Vector3(-800,0,0), Vector3(0,0,500), 3);
 	lastCameraPos = cameraPos;

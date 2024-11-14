@@ -1,12 +1,13 @@
 #include "Trunk.h"
 
-Trunk::Trunk(float hSize, GLuint icicleMask, GLuint iceTexture, GLuint woodTexture, GLuint woodNormal, GLuint iceBumpTex)
+Trunk::Trunk(float hSize, GLuint* icicleMask, GLuint* iceTexture, GLuint* woodTexture, GLuint* woodNormal, GLuint* iceBumpTex, Matrix4* offsetBatch)
 {	
 
 	//SetFromSubMesh("Trunk");
 	mesh = Mesh::LoadFromMeshFile("Trunk.msh");
 	SetMesh(mesh);
 
+	GetMaterial()->AddProperty("batch", offsetBatch);
 
 	GetMaterial()->AddProperty("diffuse", woodTexture);
 	GetMaterial()->AddProperty("woodNormal", woodNormal);

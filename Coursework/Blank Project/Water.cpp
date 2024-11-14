@@ -1,6 +1,6 @@
 #include "Water.h"
 
-Water::Water(GLuint texture, GLuint bumpTex, GLuint iceTex, GLuint iceTexBump, float hSize)
+Water::Water(GLuint* texture, GLuint* bumpTex, GLuint* iceTex, GLuint* iceTexBump, float hSize)
 	
 {
 	quad = Mesh::GenerateQuad();

@@ -4,7 +4,7 @@
 
 class Trunk : public MshObject {
 public:
-	Trunk(float hSize, GLuint icicleMask, GLuint iceTexture, GLuint woodTexture, GLuint woodNormal, GLuint iceBumpTex);
+	Trunk(float hSize, GLuint* icicleMask, GLuint* iceTexture, GLuint* woodTexture, GLuint* woodNormal, GLuint* iceBumpTex, Matrix4* offsetBatch);
 
 	~Trunk(void) {
 
@@ -15,4 +15,5 @@ public:
 
 protected:
 	Mesh* mesh;
+	Matrix4* offsetBatch;
 };

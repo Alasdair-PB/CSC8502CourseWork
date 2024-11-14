@@ -5,7 +5,7 @@
 
 class Leaves : public MshObject {
 public:
-	Leaves();
+	Leaves(Matrix4* offsetBatch);
 
 	~Leaves(void) {
 
@@ -17,4 +17,5 @@ public:
 protected:
 	SceneNode* leaves;
 	Mesh* mesh;
+	Matrix4* offsetBatch;
 };
