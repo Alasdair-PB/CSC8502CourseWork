@@ -22,20 +22,27 @@ protected:
 	void BuildNodeLists(SceneNode* from);
 	void SortNodeLists();
 	void ClearNodeLists();
+
 	void SetNodePosition(SceneNode** nodes, size_t count);
 	bool SetTerrain(SceneNode* root);
 	bool SetWater(SceneNode* root);
 	bool SetTree(SceneNode* root);
 	bool SetFoliage(SceneNode* root);
 	bool SetRocks(SceneNode* root);
-	Matrix4* GetNodePositions(size_t count, bool alignToFace);
-
 	bool SetFPSCharacter(SceneNode* root);
 	bool SetCubeMap();
+	void SetDefaults();
+	void SetUpCamera();
+	void SetUpLightingShaders();
+
+	Matrix4* GetNodePositions(size_t count, bool alignToFace);
 
 	void UpdateTemperature(float dt);
 	void UpdateFrameTime(float dt);
 	void UpdateRunner();
+	void UpdateLights();
+	void KeyBoardBinds();
+	void ParticleSetUp();
 
 	void SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFalg, int* index, int* batchDraws, Material::WorldValue val, GLint location);
 	void DepthBufferWrite();
@@ -45,19 +52,17 @@ protected:
 	void DrawSkybox();
 	void DrawParticles();
 	void DrawNodes();
+	void DrawTransparent();
 	void DrawDepthNodes(Shader* shader);
 	void DrawNodeWithFallBack(SceneNode* n, Shader* shader);
-
 	void DrawNode(SceneNode* n);
 	void DrawOpaque();
-	void DrawTransparent();
 	void DrawPointLights();
 
 	void SetProjectionMatrix();
 
 	void CombineBuffers();
 	void GenerateScreenTexture(GLuint& into, bool depth = false);
-
 
 	void PostProcess();
 	void SetLights();

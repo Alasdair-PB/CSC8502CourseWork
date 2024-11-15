@@ -5,7 +5,12 @@
 #include "Leaves.h"
 #include "Trunk.h"
 #include "Rock.h"
+#include "Renderer.h"
+#include <algorithm>
 
+#include "../nclgl/Camera.h"
+#include "../nclgl/Pathing.h"
+#include "Particle.h"
 #include "Foliage.h"
 
 #include "FPSCharacter.h"
@@ -268,7 +273,7 @@ void Renderer::SetLights()
 {
 	pointLights = new Light[LIGHT_NUM];
 
-	Vector3 offset = Vector3(mapSize.x * 0.5, 100, mapSize.x * 0.5); //Vector3(0, 0, 0); // 
+	Vector3 offset = Vector3(mapSize.x * 0.5, 100, mapSize.x * 0.5); 
 	light = new Light(Vector3(-20.0f, 10.0f, -20.0f), Vector4(1, 1, 1, 1), 250.0f);
 
 	light->SetPosition(Vector3(-20.0f, 0, -20.0f) + offset);

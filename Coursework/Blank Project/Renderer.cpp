@@ -15,44 +15,66 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root) || !SetFoliage(root)|| !SetRocks(root))
 		return;	
 
-	Vector3 cameraPos = Vector3(mapSize.x * 0.75f, 250.0f, mapSize.x * 0.75f);
-	camera = new Camera(0.0f, 0.0f, Vector3(mapSize.x * 0.5f, 250.0f, mapSize.x * 0.5f));
-	camera->GetPath()->AddCircuit(300, cameraPos);
-	lastCameraPos = cameraPos;
-	camera->GetPath()->SetPathing(false);
-	GLuint* particleTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Rock_02_normal.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	fogTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "noise.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-
-	Shader* particleShader = new Shader("particleVertex.glsl", "particleFragment.glsl");
-
-	particleManager = ParticleManager(Vector3(mapSize.x * 0.5,165, mapSize.x * 0.5), particleTexture, particleShader);
-
+	SetUpCamera();
+	ParticleSetUp();
 	SetLights();
+
 	SetFPSCharacter(root);
 	SetProjectionMatrix();
-
-	this->temperature = 30.0f;
-	this->dt = 0;
-	this->dtSeason = 0;
-	this->currentFrame = 0;
-	this->frameTime = 0.0f;
+	SetDefaults();
 
 	SetupDepthbuffer();
 	SetupFramebuffer();
 	SetupDeferredbuffer();
 	SetUpShadowMapBuffer();
 
-	sceneShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl"); 
-	pointlightShader = new Shader("pointlightvertex.glsl", "pointlightfrag.glsl");
-	combineShader = new Shader("combinevert.glsl", "combinefrag.glsl");
-	postProcessShader = new Shader("combinevert.glsl", "postProcessPass.glsl"); 
-	fallBackShader = new Shader("shadowVert.glsl", "shadowFrag.glsl");
+	SetUpLightingShaders();
 
-	if (!sceneShader->LoadSuccess() || !pointlightShader->LoadSuccess() || !combineShader->LoadSuccess()  || !postProcessShader->LoadSuccess()) 
-		return;
 	GLEnablers();	
 
 	init = true;
+}
+
+void Renderer::SetUpLightingShaders() 
+{
+	fogTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "noise.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	sceneShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl");
+	pointlightShader = new Shader("pointlightvertex.glsl", "pointlightfrag.glsl");
+	combineShader = new Shader("combinevert.glsl", "combinefrag.glsl");
+	postProcessShader = new Shader("combinevert.glsl", "postProcessPass.glsl");
+	fallBackShader = new Shader("shadowVert.glsl", "shadowFrag.glsl");
+
+	if (!sceneShader->LoadSuccess() || !pointlightShader->LoadSuccess() || !combineShader->LoadSuccess() || !postProcessShader->LoadSuccess())
+		return;
+
+}
+
+void Renderer::SetDefaults() 
+{
+	this->temperature = 30.0f;
+	this->dt = 0;
+	this->dtSeason = 0;
+	this->currentFrame = 0;
+	this->frameTime = 0.0f;
+
+}
+
+void Renderer::SetUpCamera() {
+
+	Vector3 cameraPos = Vector3(mapSize.x * 0.75f, 250.0f, mapSize.x * 0.75f);
+	camera = new Camera(0.0f, 0.0f, Vector3(mapSize.x * 0.5f, 250.0f, mapSize.x * 0.5f));
+	camera->GetPath()->AddCircuit(300, cameraPos);
+	lastCameraPos = cameraPos;
+	camera->GetPath()->SetPathing(false);
+	viewMatrix = camera->BuildViewMatrix();
+}
+
+void Renderer::ParticleSetUp() 
+{
+	GLuint* particleTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Rock_02_normal.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	Shader* particleShader = new Shader("particleVertex.glsl", "particleFragment.glsl");
+	particleManager = ParticleManager(Vector3(mapSize.x * 0.5, 165, mapSize.x * 0.5), particleTexture, particleShader);
+
 }
 
 void Renderer::SetProjectionMatrix() { projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);}
@@ -60,16 +82,14 @@ void Renderer::SetProjectionMatrix() { projMatrix = Matrix4::Perspective(1.0f, 1
 bool pathing = true;
 void Renderer::UpdateScene(float dt) 
 {	
-
 	UpdateFrameTime(dt);
 	UpdateTemperature(dt);
+	UpdateLights();
 	camera->UpdateCamera(dt);
 	UpdateRunner();
 	viewMatrix = camera->BuildViewMatrix();
 	SetProjectionMatrix();
 	root->Update(dt, camera->GetPosition());	
-	
-	
 	camera->GetPath()->SetPathing(pathing);
 
 }
@@ -95,24 +115,22 @@ void Renderer::UpdateTemperature(float dt)
 	float deltaTemperature = 0.1f;
 
 	float modedTime = this->dt;
-
-
 	modedTime = fmod(modedTime, 100.0f);
 	if (modedTime < 50.0f)
 		nextTemperature -= deltaTemperature;
 	else
 		nextTemperature += deltaTemperature;
 
-
 	particleManager.UpdateParticles(dt);
-
-	if (Window::GetKeyboard()->KeyDown(KEYBOARD_1))
-		pathing = false;
+	KeyBoardBinds();
 
 	if ((nextTemperature < 0 && temperature > 0) || (nextTemperature > 0 && temperature < 0))
 		this->dtSeason = 0;
 	this->temperature = nextTemperature;
+}
 
+void Renderer::UpdateLights()
+ {
 	float frozen = abs(abs(std::clamp(temperature - 10.0, -20.0, 0.0))) / 20;
 
 	for (int i = 0; i < LIGHT_NUM; ++i) 
@@ -120,6 +138,13 @@ void Renderer::UpdateTemperature(float dt)
 		Light& l = pointLights[i];
 		l.SetColour(Mix(Vector4(1.0, 0.6, 0.2, 1.0), Vector4(0.6, 0.7, 1.0, 1.0), frozen));
 	}
+}
+
+
+void Renderer::KeyBoardBinds() 
+{
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_1))
+		pathing = false;
 }
 
 
@@ -154,184 +179,8 @@ void Renderer::UpdateFrameTime(float dt)
 	frameTime -= dt;
 }
 
-void Renderer::DepthBufferWrite() 
-{
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-	DrawOpaque();
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
 
-
-void Renderer::ShadowBufferWrite() 
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glViewport(0, 0, SHADOWSIZE, SHADOWSIZE);
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-	Vector3 terrainCenter = Vector3(mapSize.x * 0.5f, 0.0f, mapSize.x * 0.5f);
-	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), terrainCenter);
-	viewMatrix = viewMatrix * Matrix4::Rotation(45, Vector3(0, 1, 0)) * Matrix4::Translation(Vector3(-mapSize.x * 0.5f, 0.0f, mapSize.x * 0.75f));
-	float orthoSize = mapSize.x * 0.5f;
-	projMatrix = Matrix4::Orthographic(-orthoSize, orthoSize, -orthoSize, orthoSize, 100.00f, 4200.0f);
-	shadowMatrix = projMatrix * viewMatrix;
-
-
-	BindShader(fallBackShader);
-	DrawDepthNodes(fallBackShader);
-
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glViewport(0, 0, width, height);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	viewMatrix = camera->BuildViewMatrix();
-	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
-}
-
-void Renderer::DeferredBufferWrite() 
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	UpdateShaderMatrices();
-	DrawNodes();
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);	
-	
-	SetProjectionMatrix();
-	viewMatrix = camera->BuildViewMatrix();
-}
-
-void Renderer::RenderScene() 
-{
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	BuildNodeLists(root);
-	SortNodeLists();
-
-	DepthBufferWrite();	
-	ShadowBufferWrite();
-
-	DrawSkybox();
-	DrawParticles();
-
-
-	DeferredBufferWrite();
-	DrawPointLights();
-
-	DrawNodes();
-	CombineBuffers();
-	PostProcess();
-
-	ClearNodeLists();
-}
-
-void Renderer::DrawParticles() 
-{
-	Shader* particleShader = particleManager.GetShader();
-	GLuint* particleTexture = particleManager.GetTexture();
-	const std::vector<Particle>& particles = particleManager.GetParticles();
-
-
-	for (const Particle& particle : particleManager.GetParticles())
-	{
-		if (particle.life > 0.0f)
-		{
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-			BindShader(particleShader);
-			glUniform1i(glGetUniformLocation(particleShader->GetProgram(), "sprite"), 0);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, *particleTexture);
-
-			glUniform3fv(glGetUniformLocation(particleShader->GetProgram(), "position"), 1, (float*)&particle.position);
-			glUniform4fv(glGetUniformLocation(particleShader->GetProgram(), "colour"), 1, (float*)&particle.colour);
-
-			particleManager.Draw();
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		}
-	}
-	
-}
-
-
-
-void Renderer::BuildNodeLists(SceneNode* from)
-{
-	Vector3 dir = from->GetWorldTransform().GetPositionVector() - camera->GetPosition();
-	from->SetCameraDistance(Vector3::Dot(dir, dir));
-
-	if (from->GetColour().w < 1.0f)
-		transparentNodeList.push_back(from);
-	else
-		nodeList.push_back(from);
-
-	for (auto i = from->GetChildIteratorStart(); i != from->GetChildIteratorEnd(); ++i) {
-		BuildNodeLists(*i);
-	}
-}
-
-void Renderer::SortNodeLists()
-{
-	std::sort(transparentNodeList.rbegin(), transparentNodeList.rend(), SceneNode::CompareByCameraDistance);
-	std::sort(nodeList.begin(), nodeList.end(), [](SceneNode* a, SceneNode* b)
-		{
-			if (a->GetShader() == b->GetShader())
-				return SceneNode::CompareByCameraDistance(a, b);
-			return a->GetShader() < b->GetShader();
-		});
-}
-
-void Renderer::ClearNodeLists() {
-	transparentNodeList.clear();
-	nodeList.clear();
-}
-
-
-void Renderer::DrawOpaque() 
-{
-	SetProjectionMatrix();
-	viewMatrix = camera->BuildViewMatrix();
-	for (const auto& i : nodeList) {
-		DrawNode(i);
-	}
-}
-
-
-void Renderer::DrawDepthNodes(Shader* shader)
-{
-	for (const auto& i : nodeList) {
-		DrawNodeWithFallBack(i, shader);
-	}
-}
-
-
-
-void Renderer::DrawTransparent()
-{
-	for (const auto& i : transparentNodeList) {
-		DrawNode(i);
-	}
-}
-
-
-void Renderer::DrawNodes() 
-{
-	DrawOpaque();
-	DrawTransparent();
-}
-
-void Renderer::DrawSkybox() {
-
-	glDepthMask(GL_FALSE);
-	BindShader(skyboxShader);
-	UpdateShaderMatrices();
-	skyQuad->Draw();
-	glDepthMask(GL_TRUE);
-}
-
-
-void Renderer::CombineBuffers() 
+void Renderer::CombineBuffers()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, postPFBO);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -362,14 +211,14 @@ void Renderer::CombineBuffers()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::PostProcess() 
+void Renderer::PostProcess()
 {
 	BindShader(postProcessShader);
 	glDepthFunc(GL_ALWAYS);
 	glDepthMask(GL_FALSE);
-	
+
 	glActiveTexture(GL_TEXTURE0);
-	glUniform1i(glGetUniformLocation(postProcessShader->GetProgram(), "diffuseTex"), 0);	
+	glUniform1i(glGetUniformLocation(postProcessShader->GetProgram(), "diffuseTex"), 0);
 	glBindTexture(GL_TEXTURE_2D, postPTex);
 
 	glActiveTexture(GL_TEXTURE1);
@@ -442,6 +291,116 @@ void Renderer::DrawPointLights() {
 	glClearColor(0.2f, 0.2f, 0.2f, 1);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
+
+
+void Renderer::DepthBufferWrite()
+{
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	DrawOpaque();
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+
+void Renderer::ShadowBufferWrite()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, SHADOWSIZE, SHADOWSIZE);
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+	Vector3 terrainCenter = Vector3(mapSize.x * 0.5f, 0.0f, mapSize.x * 0.5f);
+	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), terrainCenter);
+	viewMatrix = viewMatrix * Matrix4::Rotation(45, Vector3(0, 1, 0)) * Matrix4::Translation(Vector3(-mapSize.x * 0.5f, 0.0f, mapSize.x * 0.75f));
+	float orthoSize = mapSize.x * 0.5f;
+	projMatrix = Matrix4::Orthographic(-orthoSize, orthoSize, -orthoSize, orthoSize, 100.00f, 4200.0f);
+	shadowMatrix = projMatrix * viewMatrix;
+
+
+	BindShader(fallBackShader);
+	DrawDepthNodes(fallBackShader);
+
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glViewport(0, 0, width, height);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	viewMatrix = camera->BuildViewMatrix();
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+}
+
+void Renderer::DeferredBufferWrite()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	UpdateShaderMatrices();
+	DrawNodes();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	SetProjectionMatrix();
+	viewMatrix = camera->BuildViewMatrix();
+}
+
+
+
+
+void Renderer::RenderScene() 
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	BuildNodeLists(root);
+	SortNodeLists();
+
+	DepthBufferWrite();	
+	ShadowBufferWrite();
+
+	DrawSkybox();
+	DrawParticles();
+
+
+	DeferredBufferWrite();
+	DrawPointLights();
+
+	DrawNodes();
+	CombineBuffers();
+	PostProcess();
+
+	ClearNodeLists();
+}
+
+
+void Renderer::BuildNodeLists(SceneNode* from)
+{
+	Vector3 dir = from->GetWorldTransform().GetPositionVector() - camera->GetPosition();
+	from->SetCameraDistance(Vector3::Dot(dir, dir));
+
+	if (from->GetColour().w < 1.0f)
+		transparentNodeList.push_back(from);
+	else
+		nodeList.push_back(from);
+
+	for (auto i = from->GetChildIteratorStart(); i != from->GetChildIteratorEnd(); ++i) {
+		BuildNodeLists(*i);
+	}
+}
+
+void Renderer::SortNodeLists()
+{
+	std::sort(transparentNodeList.rbegin(), transparentNodeList.rend(), SceneNode::CompareByCameraDistance);
+	std::sort(nodeList.begin(), nodeList.end(), [](SceneNode* a, SceneNode* b)
+		{
+			if (a->GetShader() == b->GetShader())
+				return SceneNode::CompareByCameraDistance(a, b);
+			return a->GetShader() < b->GetShader();
+		});
+}
+
+void Renderer::ClearNodeLists() {
+	transparentNodeList.clear();
+	nodeList.clear();
+}
+
 
 
 

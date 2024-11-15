@@ -1,6 +1,8 @@
 #include "Renderer.h"
 #include "../nclgl/Material.h"
 #include "../nclgl/MeshAnimation.h"
+#include "../nclgl/Light.h"
+#include "Particle.h"
 
 void Renderer::DrawNodeWithFallBack(SceneNode* n, Shader* shader)
 {
@@ -231,4 +233,34 @@ void Renderer::SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFal
 	}
 
 }
+
+
+void Renderer::DrawParticles()
+{
+	Shader* particleShader = particleManager.GetShader();
+	GLuint* particleTexture = particleManager.GetTexture();
+	const std::vector<Particle>& particles = particleManager.GetParticles();
+
+
+	for (const Particle& particle : particleManager.GetParticles())
+	{
+		if (particle.life > 0.0f)
+		{
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+			BindShader(particleShader);
+			glUniform1i(glGetUniformLocation(particleShader->GetProgram(), "sprite"), 0);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, *particleTexture);
+
+			glUniform3fv(glGetUniformLocation(particleShader->GetProgram(), "position"), 1, (float*)&particle.position);
+			glUniform4fv(glGetUniformLocation(particleShader->GetProgram(), "colour"), 1, (float*)&particle.colour);
+
+			particleManager.Draw();
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		}
+	}
+
+}
+
+
 
