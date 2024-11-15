@@ -23,20 +23,22 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	SetProjectionMatrix();
 	SetDefaults();
 
+
 	SetupDepthbuffer();
 	SetupFramebuffer();
 	SetupDeferredbuffer();
 	SetUpShadowMapBuffer();
 
-	SetUpLightingShaders();
+	if (!SetUpLightingShaders())
+		return;
 
 	GLEnablers();	
 
 	init = true;
 }
 
-void Renderer::SetUpLightingShaders() 
-{
+bool Renderer::SetUpLightingShaders() 
+{	
 	fogTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "noise.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	sceneShader = new Shader("BumpVertex.glsl", "bufferFragment.glsl");
 	pointlightShader = new Shader("pointlightvertex.glsl", "pointlightfrag.glsl");
@@ -45,14 +47,16 @@ void Renderer::SetUpLightingShaders()
 	fallBackShader = new Shader("shadowVert.glsl", "shadowFrag.glsl");
 
 	if (!sceneShader->LoadSuccess() || !pointlightShader->LoadSuccess() || !combineShader->LoadSuccess() || !postProcessShader->LoadSuccess())
-		return;
+		return false;
+
+	return true;
 
 }
 
 void Renderer::SetDefaults() 
 {
 	this->temperature = 30.0f;
-	this->dt = 0;
+	this->dt = 0.0f;
 	this->dtSeason = 0;
 	this->currentFrame = 0;
 	this->frameTime = 0.0f;
@@ -66,12 +70,11 @@ void Renderer::SetUpCamera() {
 	camera->GetPath()->AddCircuit(300, cameraPos);
 	lastCameraPos = cameraPos;
 	camera->GetPath()->SetPathing(false);
-	viewMatrix = camera->BuildViewMatrix();
 }
 
 void Renderer::ParticleSetUp() 
 {
-	GLuint* particleTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Rock_02_normal.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	GLuint* particleTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "SnowFlake.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	Shader* particleShader = new Shader("particleVertex.glsl", "particleFragment.glsl");
 	particleManager = ParticleManager(Vector3(mapSize.x * 0.5, 165, mapSize.x * 0.5), particleTexture, particleShader);
 
@@ -79,18 +82,22 @@ void Renderer::ParticleSetUp()
 
 void Renderer::SetProjectionMatrix() { projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);}
 
-bool pathing = true;
 void Renderer::UpdateScene(float dt) 
 {	
+	bool flag = this->dt == 0;
 	UpdateFrameTime(dt);
 	UpdateTemperature(dt);
-	UpdateLights();
+	UpdateLightColourByTemp();
+
 	camera->UpdateCamera(dt);
-	UpdateRunner();
+	UpdateRunner();	
 	viewMatrix = camera->BuildViewMatrix();
+
 	SetProjectionMatrix();
-	root->Update(dt, camera->GetPosition());	
-	camera->GetPath()->SetPathing(pathing);
+	root->Update(dt, camera->GetPosition());
+
+	if (flag)
+		camera->GetPath()->SetPathing(true);
 
 }
 
@@ -109,6 +116,8 @@ Vector4 Mix(const Vector4& color1, const Vector4& color2, float ratio)
 
 void Renderer::UpdateTemperature(float dt) 
 {	
+	bool flagDtWas0 = this->dt == 0;
+
 	this->dt += dt;
 	this->dtSeason += dt;
 	float nextTemperature = this->temperature;
@@ -121,15 +130,15 @@ void Renderer::UpdateTemperature(float dt)
 	else
 		nextTemperature += deltaTemperature;
 
-	particleManager.UpdateParticles(dt);
+	particleManager.UpdateParticles(dt, lastCameraPos);
 	KeyBoardBinds();
 
 	if ((nextTemperature < 0 && temperature > 0) || (nextTemperature > 0 && temperature < 0))
 		this->dtSeason = 0;
-	this->temperature = nextTemperature;
+	this->temperature = nextTemperature;	
 }
 
-void Renderer::UpdateLights()
+void Renderer::UpdateLightColourByTemp()
  {
 	float frozen = abs(abs(std::clamp(temperature - 10.0, -20.0, 0.0))) / 20;
 
@@ -144,7 +153,7 @@ void Renderer::UpdateLights()
 void Renderer::KeyBoardBinds() 
 {
 	if (Window::GetKeyboard()->KeyDown(KEYBOARD_1))
-		pathing = false;
+		camera->GetPath()->SetPathing(false);
 }
 
 
@@ -178,6 +187,8 @@ void Renderer::UpdateFrameTime(float dt)
 {
 	frameTime -= dt;
 }
+
+
 
 
 void Renderer::CombineBuffers()
@@ -336,6 +347,7 @@ void Renderer::DeferredBufferWrite()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	UpdateShaderMatrices();
 	DrawNodes();
+	DrawParticles();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	SetProjectionMatrix();
@@ -355,14 +367,13 @@ void Renderer::RenderScene()
 	DepthBufferWrite();	
 	ShadowBufferWrite();
 
-	DrawSkybox();
-	DrawParticles();
+	//DrawSkybox();
 
 
 	DeferredBufferWrite();
 	DrawPointLights();
 
-	DrawNodes();
+	//DrawNodes();
 	CombineBuffers();
 	PostProcess();
 

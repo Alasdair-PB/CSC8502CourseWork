@@ -155,6 +155,14 @@ void Renderer::DrawNode(SceneNode* n)
 	}
 }
 
+void Renderer::SetTextureParam(int* index, GLint location, GLuint val)
+{
+	glUniform1i(location, *index);
+	glActiveTexture(GL_TEXTURE0 + *index);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, val);
+	*index += 1;
+}
+
 
 void Renderer::SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFalg, int* index, int* batchDraws, Material::WorldValue val, GLint location)
 {
@@ -236,31 +244,63 @@ void Renderer::SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFal
 
 
 void Renderer::DrawParticles()
-{
+{		
 	Shader* particleShader = particleManager.GetShader();
 	GLuint* particleTexture = particleManager.GetTexture();
-	const std::vector<Particle>& particles = particleManager.GetParticles();
 
+	BindShader(particleShader);
+	SetProjectionMatrix();
+	camera->BuildViewMatrix();
+	UpdateShaderMatrices();
 
-	for (const Particle& particle : particleManager.GetParticles())
-	{
-		if (particle.life > 0.0f)
-		{
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-			BindShader(particleShader);
-			glUniform1i(glGetUniformLocation(particleShader->GetProgram(), "sprite"), 0);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, *particleTexture);
+	glUniform3fv(glGetUniformLocation(particleShader->GetProgram(), "cameraPosition"), 1, (float*)&lastCameraPos);
 
-			glUniform3fv(glGetUniformLocation(particleShader->GetProgram(), "position"), 1, (float*)&particle.position);
-			glUniform4fv(glGetUniformLocation(particleShader->GetProgram(), "colour"), 1, (float*)&particle.colour);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+	glDisable(GL_CULL_FACE);
+	particleManager.Draw(*this);
 
-			particleManager.Draw();
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		}
-	}
-
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_CULL_FACE);
 }
 
+void Renderer::DrawNodes()
+{
+	DrawOpaque();
+	DrawTransparent();
+}
+
+void Renderer::DrawSkybox() {
+
+	glDepthMask(GL_FALSE);
+	BindShader(skyboxShader);
+	UpdateShaderMatrices();
+	skyQuad->Draw();
+	glDepthMask(GL_TRUE);
+}
+
+
+
+void Renderer::DrawDepthNodes(Shader* shader)
+{
+	for (const auto& i : nodeList) {
+		DrawNodeWithFallBack(i, shader);
+	}
+}
+
+void Renderer::DrawTransparent()
+{
+	for (const auto& i : transparentNodeList) {
+		DrawNode(i);
+	}
+}
+
+void Renderer::DrawOpaque()
+{
+	SetProjectionMatrix();
+	viewMatrix = camera->BuildViewMatrix();
+	for (const auto& i : nodeList) {
+		DrawNode(i);
+	}
+}
 
 

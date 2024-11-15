@@ -33,18 +33,19 @@ protected:
 	bool SetCubeMap();
 	void SetDefaults();
 	void SetUpCamera();
-	void SetUpLightingShaders();
+	bool SetUpLightingShaders();
 
 	Matrix4* GetNodePositions(size_t count, bool alignToFace);
 
 	void UpdateTemperature(float dt);
 	void UpdateFrameTime(float dt);
 	void UpdateRunner();
-	void UpdateLights();
+	void UpdateLightColourByTemp();
 	void KeyBoardBinds();
 	void ParticleSetUp();
 
 	void SetWorldValues(bool* renderFlag, bool* faceCulling, bool* tessFalg, int* index, int* batchDraws, Material::WorldValue val, GLint location);
+	void SetTextureParam(int* index, GLint location, GLuint val);
 	void DepthBufferWrite();
 	void DeferredBufferWrite();
 	void ShadowBufferWrite();
@@ -73,8 +74,6 @@ protected:
 	void SetupDeferredbuffer();
 
 	#define SHADOWSIZE 2048
-
-
 
 	SceneNode* root;
 	SceneNode* runningGuy;

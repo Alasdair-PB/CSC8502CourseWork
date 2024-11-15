@@ -132,6 +132,11 @@ class Pathing
 		}
 
 
+		void FlipPathing() {
+			followingPath = !followingPath;
+		}
+
+
 
 	protected:
 	

@@ -21,9 +21,6 @@ bool Renderer::SetTerrain(SceneNode* root)
 	GLuint* newTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	GLuint* newBumpTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
-	//GLuint* newGrassTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	//GLuint* newGrassBumpTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-
 	GLuint* newSnowTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "TexturesCom_Snow_A.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	GLuint* newSnowBumpTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "TexturesCom_Snow_N.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
@@ -128,6 +125,7 @@ Matrix4* Renderer::GetNodePositions(size_t count, bool alignToFace)
 		if (heightMap->RayMeshIntersect(point, Vector3(0, -1, 0), hitPos, planeDir, distance))
 		{
 			if (alignToFace) {
+
 				Vector3 up = *planeDir;
 				Vector3 forward = Vector3::Cross(Vector3(0, 1, 0), up);
 

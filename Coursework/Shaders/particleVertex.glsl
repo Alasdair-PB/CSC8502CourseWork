@@ -1,17 +1,25 @@
-#version 400 core
+#version 330 core
 
-in vec3 position;
-in vec4 colour;
+uniform mat4 viewMatrix;
+uniform mat4 projMatrix;
+uniform mat4 textureMatrix;
+
+
+layout (std140) uniform ObjectMatrices {
+    mat4 matrices[500];
+};
+
 in vec2 texCoord;
+in vec3 position;
+
 
 out Vertex {
-	vec4 colour;
 	vec2 texCoord;
 } OUT;
 
-void main(void) 
+void main (void) 
 {
+    mat4 vp = projMatrix * viewMatrix;
+    gl_Position = vp * matrices[gl_InstanceID] * vec4(position, 1);
     OUT.texCoord = texCoord;
-	OUT.colour = colour;
-	gl_Position = vec4(position, 1.0); 
 }

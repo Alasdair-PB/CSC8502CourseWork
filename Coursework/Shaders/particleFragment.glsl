@@ -1,13 +1,18 @@
-#version 330 core
+#version 400 core
 
-in vec2 texCoord;
-in vec4 colour;
+uniform sampler2D diffuseTex;  
 
-out vec4 fragColour; 
+in Vertex {
+    vec2 texCoord;
+}IN;
 
-uniform sampler2D sprite;
+out vec4[2] fragColour; 
 
-void main()
+void main(void)
 {
-    fragColour = (texture(sprite, texCoord) * colour);
+   vec4 value = texture(diffuseTex, IN.texCoord).rgba;
+	if( value.a == 0.0) 
+		discard;
+	fragColour[0] = value;
+	fragColour[1] = vec4(1);
 } 

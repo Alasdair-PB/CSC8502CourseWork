@@ -72,7 +72,7 @@ public:
 	int GetIndexForJoint(const std::string& name) const;
 	int GetParentForJoint(const std::string& name) const;
 	int GetParentForJoint(int i) const;
-
+	void InstancedDraw(int count);
 	const Matrix4* GetBindPose() const {
 		return bindPose;
 	}
