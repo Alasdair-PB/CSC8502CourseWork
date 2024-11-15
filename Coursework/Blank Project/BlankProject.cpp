@@ -3,12 +3,12 @@
 
 
 int main() {
-	Window w("Deferred Rendering!", 1280, 720, false); //This is all boring win32 window creation stuff!
+	Window w("Deferred Rendering!", 1920, 1200, true); 
 	if (!w.HasInitialised()) {
 		return -1;
 	}
 
-	Renderer renderer(w); //This handles all the boring OGL 3.2 initialisation stuff, and sets up our tutorial!
+	Renderer renderer(w); 
 	if (!renderer.HasInitialised()) {
 		return -1;
 	}
