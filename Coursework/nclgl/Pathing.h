@@ -27,8 +27,8 @@ class Pathing
 		Pathing() 
 		{
 			followingPath = true;
-			bezierT = 0.0f;
-			currentCurveIndex = 0;
+			bezierT = 0.1f;
+			currentCurveIndex = 1;
 			bezierSpeed = 0.1f;
 			bezierPath = std::vector<BezierCurve>();
 		}
@@ -60,7 +60,8 @@ class Pathing
 
 		bool ContinePath() { return followingPath && !bezierPath.empty();}
 
-		void AddPath(Vector3 startPoint, Vector3 windingPointA, 
+
+		void AddPath(Vector3 startPoint, Vector3 windingPointA,
 			Vector3 windingPointB, Vector3 endPoint)
 		{
 			bezierPath.push_back(BezierCurve{
@@ -68,38 +69,78 @@ class Pathing
 				windingPointA,
 				windingPointB,
 				endPoint
-			});
+				});
 		}
 
-		Vector3 GetNextPosition(float dt) {
-			bezierT += dt * bezierSpeed;
+		void AddPath(Vector3 windingPointA, 
+			Vector3 windingPointB, Vector3 endPoint)
+		{
+			Vector3 startPoint = bezierPath.back().p3;
+			bezierPath.push_back(BezierCurve{
+				startPoint,
+				windingPointA,
+				windingPointB,
+				endPoint
+			});
+		}
+		void AddCircuit(float radius, Vector3 offset, int segments = 8) {
+			bezierPath.clear();
+			float angleStep = 2.0f * PI / segments;
+
+			for (int i = 0; i < segments; ++i) {
+				// Calculate the angles for each segment
+				float angle1 = i * angleStep;
+				float angle2 = (i + 1) * angleStep;
+
+				// Define the start and end points on the circle
+				Vector3 startPoint = Vector3(radius * cos(angle1), 0, radius * sin(angle1)) + offset;
+				Vector3 endPoint = Vector3(radius * cos(angle2), 0, radius * sin(angle2)) + offset;
+
+				// Define the winding points using tangents to the circle at each point
+				Vector3 tangent1 = Vector3(-radius * sin(angle1), 0, radius * cos(angle1));  // Tangent at start
+				Vector3 tangent2 = Vector3(-radius * sin(angle2), 0, radius * cos(angle2));  // Tangent at end
+
+				// Scale the tangents to position the winding points away from the circle (by a factor of 0.5 for smoothing)
+				Vector3 windingPointA = startPoint + tangent1 * 0.5f;
+				Vector3 windingPointB = endPoint + tangent2 * 0.5f;
+
+				// Add the segment to the path
+				AddPath(startPoint, windingPointA, windingPointB, endPoint);
+			}
+		}
+
+
+
+		Vector3 GetNextPosition(float dt, bool hidden = false) 
+		{
+			bezierT += (dt * bezierSpeed);
 
 			while (bezierT > 1.0f) {
 				bezierT -= 1.0f;
-				currentCurveIndex += reverse ? -1 : 1;
+				currentCurveIndex += 1;
 
-				if (currentCurveIndex < 0 || currentCurveIndex >= bezierPath.size()) {
-					reverse = !reverse;
-					currentCurveIndex = reverse ? bezierPath.size() - 1 : 0;
-					return bezierPath[currentCurveIndex].GetPoint(reverse ? 1.0f : 0.0f);
-				}
+				if (currentCurveIndex >= bezierPath.size()) 
+					currentCurveIndex = 0;  
 			}
 			return bezierPath[currentCurveIndex].GetPoint(bezierT);
 		}
 
+
+
 		void SetPathing(bool state) {
-			 followingPath = false;
+			 followingPath = state;
 		}
 
 
 
 	protected:
 	
+		bool looped = true;
 		bool reverse = false;
 		std::vector <BezierCurve> bezierPath;
 		bool followingPath = true;
 		float bezierT = 0.0f;
-		int currentCurveIndex = 0;
+		int currentCurveIndex = 1;
 		float bezierSpeed = 0.1f;
 
 

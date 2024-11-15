@@ -15,11 +15,11 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	if (!SetCubeMap() || !SetTerrain(root) || !SetWater(root) || !SetTree(root) || !SetFoliage(root)|| !SetRocks(root))
 		return;	
 
-	Vector3 cameraPos = Vector3(mapSize.x * 0.5f, 250.0f, mapSize.x * 0.5f);
-	camera = new Camera(-45.0f, 0.0f, cameraPos);
-	camera->GetPath()->SetPathPattern(cameraPos, Vector3(800,0,0), Vector3(-800,0,0), Vector3(0,0,500), 3);
+	Vector3 cameraPos = Vector3(mapSize.x * 0.75f, 250.0f, mapSize.x * 0.75f);
+	camera = new Camera(0.0f, 0.0f, Vector3(mapSize.x * 0.5f, 250.0f, mapSize.x * 0.5f));
+	camera->GetPath()->AddCircuit(300, cameraPos);
 	lastCameraPos = cameraPos;
-
+	camera->GetPath()->SetPathing(false);
 	GLuint* particleTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "Rock_02_normal.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	fogTexture = new GLuint(SOIL_load_OGL_texture(TEXTUREDIR "noise.PNG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
@@ -30,6 +30,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 	SetLights();
 	SetFPSCharacter(root);
 	SetProjectionMatrix();
+
 	this->temperature = 30.0f;
 	this->dt = 0;
 	this->dtSeason = 0;
@@ -49,25 +50,28 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent)
 
 	if (!sceneShader->LoadSuccess() || !pointlightShader->LoadSuccess() || !combineShader->LoadSuccess()  || !postProcessShader->LoadSuccess()) 
 		return;
-	
-	GLEnablers();
+	GLEnablers();	
+
 	init = true;
 }
 
 void Renderer::SetProjectionMatrix() { projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);}
 
+bool pathing = true;
 void Renderer::UpdateScene(float dt) 
 {	
+
 	UpdateFrameTime(dt);
 	UpdateTemperature(dt);
 	camera->UpdateCamera(dt);
-
-
-
 	UpdateRunner();
 	viewMatrix = camera->BuildViewMatrix();
 	SetProjectionMatrix();
-	root->Update(dt, camera->GetPosition());
+	root->Update(dt, camera->GetPosition());	
+	
+	
+	camera->GetPath()->SetPathing(pathing);
+
 }
 
 
@@ -103,12 +107,7 @@ void Renderer::UpdateTemperature(float dt)
 	particleManager.UpdateParticles(dt);
 
 	if (Window::GetKeyboard()->KeyDown(KEYBOARD_1))
-		nextTemperature += 0.3f;
-	if (Window::GetKeyboard()->KeyDown(KEYBOARD_2))
-		nextTemperature -= 0.3f;
-
-	if (Window::GetKeyboard()->KeyDown(KEYBOARD_3))
-		camera->SetTrack(false);
+		pathing = false;
 
 	if ((nextTemperature < 0 && temperature > 0) || (nextTemperature > 0 && temperature < 0))
 		this->dtSeason = 0;

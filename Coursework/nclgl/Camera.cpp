@@ -40,7 +40,15 @@ Vector3 Lerp(const Vector3& start, const Vector3& end, float t) {
     return start + (end - start) * t;
 }
 
-void Camera::UpdateCameraPathing(float dt) {
+void Camera::OnStart(float dt) 
+{
+    Vector3 targetPos = path->GetNextPosition(0.01);
+    position =  targetPos;
+}
+
+void Camera::UpdateCameraPathing(float dt) 
+{
+
     Vector3 lastPos = position;
     Vector3 targetPos = path->GetNextPosition(dt);
 
