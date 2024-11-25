@@ -367,13 +367,11 @@ void Renderer::RenderScene()
 	DepthBufferWrite();	
 	ShadowBufferWrite();
 
-	//DrawSkybox();
-
+	DrawSkybox();
 
 	DeferredBufferWrite();
 	DrawPointLights();
 
-	//DrawNodes();
 	CombineBuffers();
 	PostProcess();
 

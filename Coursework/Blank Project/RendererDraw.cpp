@@ -274,6 +274,8 @@ void Renderer::DrawSkybox() {
 	glDepthMask(GL_FALSE);
 	BindShader(skyboxShader);
 	UpdateShaderMatrices();
+	glUniform1f(glGetUniformLocation(skyboxShader->GetProgram(), "temperature"), temperature);
+
 	skyQuad->Draw();
 	glDepthMask(GL_TRUE);
 }
