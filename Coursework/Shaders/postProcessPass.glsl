@@ -8,7 +8,8 @@ uniform float fogDensity;
 uniform vec3 fogColor;     
 uniform vec3 cameraPos;
 uniform mat4 projMatrix;           
-uniform mat4 inverseProjView;          
+uniform mat4 inverseProjView;   
+uniform float bendFactor = 1000; 
 
 in Vertex {
     vec2 texCoord;
@@ -23,13 +24,17 @@ float getLinearDepth(float depthSample)
     return (2.0 * near) / (far + near - depthSample * (far - near));
 }
 
+vec3 reconstructWorldPosition(vec2 uv, float depth)
+{
+    vec4 ndcPos = vec4(uv * 2.0 - 1.0, depth, 1.0);
+    vec4 worldPos = inverseProjView * ndcPos;
+    return worldPos.xyz / worldPos.w; 
+}
+
 void main(void)
 {
     float depth = texture(depthTex, IN.texCoord).r;
-    vec3 ndcPos = vec3(IN.texCoord, depth) * 2.0 - 1.0;
-    vec4 invClipPos = inverseProjView * vec4(ndcPos, 1.0);
-    vec3 worldPos = invClipPos.xyz / invClipPos.w;
-    
+    vec3 worldPos = reconstructWorldPosition(IN.texCoord, depth);
 
     float distance = length(cameraPos - worldPos);
     float linearDepth = getLinearDepth(depth);
@@ -41,7 +46,6 @@ void main(void)
 
     vec4 fog = texture(fogTexture, fogTexCoord);
     fog.xyz *= fogColor;
-
     vec4 finalColor = vec4(diffuse.rgb, 1.0);
     finalColor.xyz = mix(fog.xyz, finalColor.xyz, fogFactor);
 

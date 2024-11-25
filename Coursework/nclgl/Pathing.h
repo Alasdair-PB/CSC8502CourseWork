@@ -83,28 +83,26 @@ class Pathing
 				endPoint
 			});
 		}
+
+
 		void AddCircuit(float radius, Vector3 offset, int segments = 8) {
 			bezierPath.clear();
 			float angleStep = 2.0f * PI / segments;
 
-			for (int i = 0; i < segments; ++i) {
-				// Calculate the angles for each segment
+			for (int i = 0; i < segments; ++i)
+			{
 				float angle1 = i * angleStep;
 				float angle2 = (i + 1) * angleStep;
 
-				// Define the start and end points on the circle
 				Vector3 startPoint = Vector3(radius * cos(angle1), 0, radius * sin(angle1)) + offset;
 				Vector3 endPoint = Vector3(radius * cos(angle2), 0, radius * sin(angle2)) + offset;
 
-				// Define the winding points using tangents to the circle at each point
-				Vector3 tangent1 = Vector3(-radius * sin(angle1), 0, radius * cos(angle1));  // Tangent at start
-				Vector3 tangent2 = Vector3(-radius * sin(angle2), 0, radius * cos(angle2));  // Tangent at end
+				Vector3 tangent1 = Vector3(-radius * sin(angle1), 0, radius * cos(angle1));  
+				Vector3 tangent2 = Vector3(-radius * sin(angle2), 0, radius * cos(angle2)); 
 
-				// Scale the tangents to position the winding points away from the circle (by a factor of 0.5 for smoothing)
 				Vector3 windingPointA = startPoint + tangent1 * 0.5f;
 				Vector3 windingPointB = endPoint + tangent2 * 0.5f;
 
-				// Add the segment to the path
 				AddPath(startPoint, windingPointA, windingPointB, endPoint);
 			}
 		}

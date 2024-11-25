@@ -136,8 +136,6 @@ void Renderer::DrawNode(SceneNode* n)
 				n->Draw(*this, GL_PATCHES);
 			else
 				n->Draw(*this);
-
-
 		}
 		else 
 		{
@@ -147,11 +145,10 @@ void Renderer::DrawNode(SceneNode* n)
 				glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false, model.values);
 				n->Draw(*this);
 			}
-			
 		}
 		
 		if (faceCulling == false)
-				glEnable(GL_CULL_FACE);
+			glEnable(GL_CULL_FACE);
 	}
 }
 
