@@ -149,11 +149,16 @@ void Renderer::UpdateLightColourByTemp()
 	}
 }
 
+bool stickToGround = true;
+
 
 void Renderer::KeyBoardBinds() 
 {
 	if (Window::GetKeyboard()->KeyDown(KEYBOARD_1))
 		camera->GetPath()->SetPathing(false);
+
+	if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_2))
+		stickToGround = !stickToGround;
 }
 
 
@@ -181,6 +186,18 @@ void Renderer::UpdateRunner()
 
 	lastCameraPos = cameraPos;
 	runningGuy->SetTransform(nextPos);
+
+
+	if (!stickToGround)
+		return;
+
+	Vector3 point = Vector3(cameraPos.x, cameraPos.y + 10, cameraPos.z);
+	Vector3* hitPos = new Vector3();
+	Vector3* planeDir = new Vector3();
+	float distance = 300;
+
+	if (heightMap->RayMeshIntersect(point, Vector3(0, -1, 0), hitPos, planeDir, distance))
+		camera->SetPosition(Vector3(cameraPos.x, hitPos->y + 80, cameraPos.z));
 }
 
 void Renderer::UpdateFrameTime(float dt)

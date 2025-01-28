@@ -1,7 +1,6 @@
 #include "Mesh.h"
 #include "Matrix2.h"
 
-
 using std::string;
 
 Mesh::Mesh(void) {

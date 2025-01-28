@@ -94,7 +94,6 @@ class ParticleManager
                 Vector3 right = Vector3::Cross(up, toCamera);
                 Matrix4 rot = Matrix4::FromAxes(right, up, toCamera);
 
-
                 positions[i] = Matrix4::Translation(p.position) * rot * Matrix4::Scale(Vector3(3,3,3));
             }
         }
